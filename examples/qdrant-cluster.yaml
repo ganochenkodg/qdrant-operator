@@ -1,0 +1,7 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCluster
+metadata:
+  name: test
+spec:
+  test: value
+  foo: bar

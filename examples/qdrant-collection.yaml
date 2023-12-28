@@ -1,0 +1,7 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCollection
+metadata:
+  name: test-col
+spec:
+  test: value
+  foo: bar

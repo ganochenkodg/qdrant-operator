@@ -25,43 +25,50 @@ const onEvent = async (phase, obj) => {
   } else {
     log(`Unknown event type: ${phase}`);
   }
-}
+};
 
 const onDone = (err) => {
   log(`Connection closed. ${err}`);
   watchResource();
-}
+};
 
 const watchResource = async () => {
   log('Watching API');
-  return watch.watch(
-    '/apis/qdrant.operator/v1alpha1',
+  let clusterWatch = watch.watch(
+    '/apis/qdrant.operator/v1alpha1/qdrantclusters',
     {},
     onEvent,
     onDone
   );
-}
+  let collectionWatch = watch.watch(
+    '/apis/qdrant.operator/v1alpha1/qdrantcollections',
+    {},
+    onEvent,
+    onDone
+  );
+  return Promise.any([clusterWatch, collectionWatch]);
+};
 
 const scheduleApplying = (obj) => {
   if (!applyingScheduled) {
-    setTimeout(applyNow, 1000, obj);
+    setTimeout(applyNow, 5000, obj);
     applyingScheduled = true;
   }
-}
+};
 
 const applyNow = async (obj) => {
   applyingScheduled = false;
   //applySecret(obj, k8sCoreApi, privateKey);
   console.log(obj);
-}
+};
 
 const main = async () => {
   await watchResource();
-}
+};
 
 export const log = (message) => {
   console.log(`${new Date().toLocaleString()}: ${message}`);
-}
+};
 
 if (debugMode == 'true') {
   log('Debug mode ON!');

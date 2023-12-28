@@ -74,8 +74,8 @@ spec:
         image: docker.io/dganochenko/qdrant-operator:0.1.0
         imagePullPolicy: Always
         # debug
-        # command: ["/bin/sh"]
-        # args: ["-c", "while true; do echo hello; sleep 10;done"]
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do echo hello; sleep 10;done"]
         envFrom:
         - configMapRef:
             name: qdrant-operator-config
