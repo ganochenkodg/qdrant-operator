@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: qdrant-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: qdrant-operator-sa
+  namespace: qdrant-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: qdrant-operator-role
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get","list","watch"]
+  - apiGroups: ["qdrant.operator"]
+    resources: ["qdrantclusters", "qdrantclusters/status", "qdrantcollections", "qdrantcollections/status"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: [""]
+    resources: ["namespaces", "secrets", "configmaps", "services"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: qdrant-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: qdrant-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: qdrant-operator-sa
+    namespace: qdrant-operator
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qdrant-operator-config
+  namespace: qdrant-operator
+data:
+  CLUSTER_DOMAIN: "cluster.local"
+  DEBUG_MODE: "true"
+  QDRANT_REPO: "qdrant/qdrant"
+  QDRANT_TAG: "1.7.3"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant-operator
+  namespace: qdrant-operator
+  labels: &labels
+    app: qdrant-operator
+    component: operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels: *labels
+  template:
+    metadata: 
+      labels: *labels
+    spec:
+      serviceAccountName: qdrant-operator-sa
+      containers:
+      - name: operator
+        image: docker.io/dganochenko/qdrant-operator:0.1.0
+        imagePullPolicy: Always
+        # debug
+        # command: ["/bin/sh"]
+        # args: ["-c", "while true; do echo hello; sleep 10;done"]
+        envFrom:
+        - configMapRef:
+            name: qdrant-operator-config

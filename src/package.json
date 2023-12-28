@@ -1,0 +1,27 @@
+{
+  "name": "qdrant-operator",
+  "version": "0.1.0",
+  "description": "Kubernetes operator for Qdrant",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ganochenkodg/qdrant-operator.git"
+  },
+  "keywords": [
+    "k8s",
+    "operator"
+  ],
+  "author": "Dmitrii Ganochenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ganochenkodg/qdrant-operator/issues"
+  },
+  "homepage": "https://github.com/ganochenkodg/qdrant-operator#readme",
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0"
+  }
+}
