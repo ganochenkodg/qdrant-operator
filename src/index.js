@@ -9,7 +9,7 @@ kc.loadFromDefault();
 const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
 
-async function onEvent(phase, obj) {
+const onEvent = async(phase, obj) => {
   log(`Received event in phase ${phase}.`);
   if (phase == 'ADDED') {
     scheduleApplying(obj);
@@ -27,12 +27,12 @@ async function onEvent(phase, obj) {
   }
 }
 
-function onDone(err) {
+const onDone = (err) => {
   log(`Connection closed. ${err}`);
   watchResource();
 }
 
-async function watchResource() {
+const watchResource = async() => {
   log('Watching API');
   return watch.watch(
     '/apis/qdrant.operator/v1alpha1',
@@ -42,24 +42,24 @@ async function watchResource() {
   );
 }
 
-function scheduleApplying(obj) {
+const scheduleApplying = (obj) => {
   if (!applyingScheduled) {
     setTimeout(applyNow, 1000, obj);
     applyingScheduled = true;
   }
 }
 
-async function applyNow(obj) {
+const applyNow = async(obj) => {
   applyingScheduled = false;
   //applySecret(obj, k8sCoreApi, privateKey);
   console.log(obj);
 }
 
-async function main() {
+const main = async () => {
   await watchResource();
 }
 
-export function log(message) {
+export const log = (message) => {
   console.log(`${new Date().toLocaleString()}: ${message}`);
 }
 
@@ -69,7 +69,5 @@ if (debugMode == 'true') {
     console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
   });
 }
-
-const privateKey = await getPrivateKey(k8sCoreApi);
 
 main();
