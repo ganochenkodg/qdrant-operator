@@ -9,7 +9,7 @@ kc.loadFromDefault();
 const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
 
-const onEvent = async(phase, obj) => {
+const onEvent = async (phase, obj) => {
   log(`Received event in phase ${phase}.`);
   if (phase == 'ADDED') {
     scheduleApplying(obj);
@@ -32,7 +32,7 @@ const onDone = (err) => {
   watchResource();
 }
 
-const watchResource = async() => {
+const watchResource = async () => {
   log('Watching API');
   return watch.watch(
     '/apis/qdrant.operator/v1alpha1',
@@ -49,7 +49,7 @@ const scheduleApplying = (obj) => {
   }
 }
 
-const applyNow = async(obj) => {
+const applyNow = async (obj) => {
   applyingScheduled = false;
   //applySecret(obj, k8sCoreApi, privateKey);
   console.log(obj);
