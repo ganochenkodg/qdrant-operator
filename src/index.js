@@ -1,4 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
+import { applyCluster } from './cluster-ops.js';
 
 const debugMode = process.env.DEBUG_MODE || 'false';
 let applyingScheduled = false;
@@ -9,13 +10,11 @@ kc.loadFromDefault();
 const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
 
-const onEvent = async (phase, obj) => {
+const onEvent = async (phase, apiObj) => {
   log(`Received event in phase ${phase}.`);
-  if (phase == 'ADDED') {
-    scheduleApplying(obj);
-  } else if (phase == 'MODIFIED') {
+  if (['ADDED', 'MODIFIED'].includes(phase)) {
     try {
-      scheduleApplying(obj);
+      scheduleApplying(apiObj);
     } catch (err) {
       log(err);
     }
@@ -49,17 +48,16 @@ const watchResource = async () => {
   return Promise.any([clusterWatch, collectionWatch]);
 };
 
-const scheduleApplying = (obj) => {
+const scheduleApplying = (apiObj) => {
   if (!applyingScheduled) {
-    setTimeout(applyNow, 5000, obj);
+    setTimeout(applyNow, 1000, apiObj);
     applyingScheduled = true;
   }
 };
 
-const applyNow = async (obj) => {
+const applyNow = async (apiObj) => {
   applyingScheduled = false;
-  //applySecret(obj, k8sCoreApi, privateKey);
-  console.log(obj);
+  await applyCluster(apiObj, k8sCoreApi);
 };
 
 const main = async () => {

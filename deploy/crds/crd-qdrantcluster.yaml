@@ -20,6 +20,7 @@ spec:
         openAPIV3Schema:
           description: "A Qdrant collection definition"
           type: object
+          required: ["kind", "apiVersion", "spec"]
           properties:
             apiVersion:
               type: string
@@ -31,5 +32,9 @@ spec:
               description: "Specs of the Qdrant collection"
               type: object
               x-kubernetes-preserve-unknown-fields: true
-          required: ["spec"]
+              required: ["replicas"]
+              properties:
+                replicas:
+                  type: integer
+                  minimum: 1
 

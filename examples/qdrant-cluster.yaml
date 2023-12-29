@@ -3,5 +3,4 @@ kind: QdrantCluster
 metadata:
   name: test
 spec:
-  test: value
-  foo: bar
+  replicas: 1 
