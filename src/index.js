@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import { applyCluster } from './cluster-ops.js';
+import { applyCluster, applyConfigmapCluster } from './cluster-ops.js';
 
 const debugMode = process.env.DEBUG_MODE || 'false';
 let applyingScheduled = false;
@@ -57,6 +57,7 @@ const scheduleApplying = (apiObj) => {
 
 const applyNow = async (apiObj) => {
   applyingScheduled = false;
+  await applyConfigmapCluster(apiObj, k8sCoreApi);
   await applyCluster(apiObj, k8sCoreApi);
 };
 

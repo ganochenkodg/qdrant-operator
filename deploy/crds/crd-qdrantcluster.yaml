@@ -18,7 +18,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          description: "A Qdrant collection definition"
+          description: "A Qdrant cluster definition"
           type: object
           required: ["kind", "apiVersion", "spec"]
           properties:
@@ -29,11 +29,15 @@ spec:
             metadata:
               type: object
             spec:
-              description: "Specs of the Qdrant collection"
+              description: "Specs of the Qdrant cluster"
               type: object
               x-kubernetes-preserve-unknown-fields: true
               required: ["replicas"]
               properties:
+                config:
+                  description: "Custom Qdrant configuration"
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 replicas:
                   type: integer
                   minimum: 1

@@ -4,6 +4,9 @@ metadata:
   name: test
 spec:
   replicas: 1
+  config:
+    cluster:
+      enabled: false
   persistence:
     size: 1Gi
     storageClassName: default
