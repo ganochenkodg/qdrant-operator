@@ -4,6 +4,7 @@ metadata:
   name: test
 spec:
   replicas: 1
+  apikey: "newkey"
   config:
     cluster:
       enabled: false
@@ -15,5 +16,5 @@ spec:
       cpu: 200m
       memory: 128Mi
     limits:
-      cpu: 200m
+      cpu: 220m
       memory: 128Mi

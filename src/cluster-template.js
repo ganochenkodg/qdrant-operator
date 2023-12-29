@@ -1,3 +1,16 @@
+import yaml from 'js-yaml';
+import { Str } from '@supercharge/strings';
+
+const setOwnerReference = (apiObj) => {
+  var template = {
+    apiVersion: `${apiObj.apiVersion}`,
+    kind: `${apiObj.kind}`,
+    name: `${apiObj.metadata.name}`,
+    uid: `${apiObj.metadata.uid}`
+  };
+  return template;
+};
+
 export const clusterTemplate = (apiObj) => {
   var name = apiObj.metadata.name;
 
@@ -33,6 +46,30 @@ export const clusterTemplate = (apiObj) => {
   return template;
 };
 
+export const clusterSecretTemplate = (apiObj) => {
+  var name = apiObj.metadata.name;
+  const apikey =
+    apiObj.spec.apikey == true ? Str.random(32) : apiObj.spec.apikey;
+
+  var template = {
+    apiVersion: 'v1',
+    kind: 'Secret',
+    type: 'Opaque',
+    metadata: {
+      name: `${name}-apikey`,
+      namespace: `${apiObj.metadata.namespace}`
+    },
+    data: {
+      'api-key': `${btoa(apikey)}`,
+      'local.yaml': `${btoa('service:\n  api_key: ' + apikey)}`
+    }
+  };
+
+  template.metadata.ownerReferences = [setOwnerReference(apiObj)];
+
+  return template;
+};
+
 export const clusterConfigmapTemplate = (apiObj) => {
   var name = apiObj.metadata.name;
   var initcommand = '#!/bin/sh\nSET_INDEX=${HOSTNAME##*-}\n';
@@ -59,8 +96,16 @@ export const clusterConfigmapTemplate = (apiObj) => {
       namespace: `${apiObj.metadata.namespace}`
     },
     data: {
-      'initialize.sh': `${initcommand}`
+      'initialize.sh': `${initcommand}`,
+      'production.yaml': `${
+        typeof apiObj.spec.config !== 'undefined'
+          ? yaml.dump(apiObj.spec.config)
+          : ''
+      }`
     }
   };
+
+  template.metadata.ownerReferences = [setOwnerReference(apiObj)];
+
   return template;
 };
