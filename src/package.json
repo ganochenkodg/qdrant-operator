@@ -24,6 +24,7 @@
   "dependencies": {
     "@kubernetes/client-node": "^0.20.0",
     "@supercharge/strings": "^2.0.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "jsrender": "^1.0.13"
   }
 }

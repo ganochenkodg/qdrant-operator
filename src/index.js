@@ -2,7 +2,9 @@ import * as k8s from '@kubernetes/client-node';
 import {
   applyCluster,
   applyConfigmapCluster,
-  applySecretCluster
+  applySecretCluster,
+  applyServiceHeadlessCluster,
+  applyServiceCluster
 } from './cluster-ops.js';
 
 const debugMode = process.env.DEBUG_MODE || 'false';
@@ -63,6 +65,8 @@ const applyNow = async (apiObj) => {
   applyingScheduled = false;
   await applyConfigmapCluster(apiObj, k8sCoreApi);
   await applySecretCluster(apiObj, k8sCoreApi);
+  await applyServiceHeadlessCluster(apiObj, k8sCoreApi);
+  await applyServiceCluster(apiObj, k8sCoreApi);
   // await applyCluster(apiObj, k8sCoreApi);
 };
 

@@ -9,6 +9,7 @@ USER node
 RUN npm ci --omit=dev
 
 COPY --chown=node:node *.js ./
+COPY --chown=node:node templates templates/
 
 CMD [ "node", "index.js" ]
 
