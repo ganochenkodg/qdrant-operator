@@ -1,5 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
 import {
+  setStatus,
   applyCluster,
   applyConfigmapCluster,
   applySecretCluster,
@@ -14,6 +15,7 @@ const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
 
 const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
+const k8sCustomApi = kc.makeApiClient(k8s.CustomObjectsApi);
 const watch = new k8s.Watch(kc);
 
 const onEvent = async (phase, apiObj) => {
@@ -62,6 +64,7 @@ const scheduleApplying = (apiObj) => {
 };
 
 const applyNow = async (apiObj) => {
+  await setStatus(apiObj, k8sCustomApi, 'Pending');
   applyingScheduled = false;
   await applyConfigmapCluster(apiObj, k8sCoreApi);
   await applySecretCluster(apiObj, k8sCoreApi);

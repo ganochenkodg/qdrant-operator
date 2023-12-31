@@ -7,6 +7,37 @@ import {
   clusterServiceTemplate
 } from './cluster-template.js';
 
+export const setStatus = async (apiObj, k8sCustomApi, status) => {
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const newStatus = {
+    apiVersion: apiObj.apiVersion,
+    kind: apiObj.kind,
+    metadata: {
+      name: name,
+      resourceVersion: apiObj.metadata.resourceVersion
+    },
+    status: {
+      qdrantStatus: status
+    }
+  };
+
+  try {
+    const res = await k8sCustomApi.replaceNamespacedCustomObjectStatus(
+      'qdrant.operator',
+      'v1alpha1',
+      namespace,
+      'qdrantclusters',
+      name,
+      newStatus
+    );
+
+    log(`The cluster "${name}" status now is ${status}.`);
+  } catch (err) {
+    log(err);
+  }
+};
+
 export const applyCluster = async (apiObj, k8sCoreApi) => {
   var newClusterTemplate = clusterTemplate(apiObj);
   console.log(newClusterTemplate);
