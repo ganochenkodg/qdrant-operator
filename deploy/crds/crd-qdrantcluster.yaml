@@ -45,6 +45,10 @@ spec:
             x-kubernetes-preserve-unknown-fields: true
             required: ["replicas"]
             properties:
+              apikey:
+                description: "Enable or disable or use pre-defined apikey"
+                type: string
+                default: "false"
               config:
                 description: "Custom Qdrant configuration"
                 type: object

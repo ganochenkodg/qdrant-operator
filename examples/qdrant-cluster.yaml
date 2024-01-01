@@ -4,7 +4,7 @@ metadata:
   name: test
 spec:
   replicas: 1
-  apikey: 'newkeyuu2'
+  # apikey: 'newkeyuu2'
   config:
     cluster:
       enabled: false

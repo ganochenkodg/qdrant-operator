@@ -57,6 +57,11 @@ export const clusterServiceTemplate = (apiObj) => {
   return yaml.load(template(apiObj));
 };
 
+export const clusterPdbTemplate = (apiObj) => {
+  var template = jsrender.templates('./templates/pdb.jsr');
+  return yaml.load(template(apiObj));
+};
+
 export const clusterConfigmapTemplate = (apiObj) => {
   var template = jsrender.templates('./templates/configmap.jsr');
   var jsontemplate = yaml.load(template(apiObj));

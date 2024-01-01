@@ -4,7 +4,8 @@ import {
   clusterConfigmapTemplate,
   clusterSecretTemplate,
   clusterServiceHeadlessTemplate,
-  clusterServiceTemplate
+  clusterServiceTemplate,
+  clusterPdbTemplate
 } from './cluster-template.js';
 
 export const setStatus = async (apiObj, k8sCustomApi, status) => {
@@ -44,7 +45,7 @@ export const applyCluster = async (apiObj, k8sCoreApi) => {
 };
 
 export const applySecretCluster = async (apiObj, k8sCoreApi) => {
-  if (typeof apiObj.spec.apikey == 'undefined' || apiObj.spec.apikey == false) {
+  if (apiObj.spec.apikey == 'false') {
     return;
   }
 
@@ -58,8 +59,8 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`
     );
     const secret = res.body;
-    log(`Secret ${name}-apikey already exists!`);
-    if ([true, atob(secret.data['api-key'])].includes(apiObj.spec.apikey)) {
+    log(`Secret "${name}-apikey" already exists!`);
+    if (['true', atob(secret.data['api-key'])].includes(apiObj.spec.apikey)) {
       return;
     }
     k8sCoreApi.replaceNamespacedSecret(
@@ -67,14 +68,14 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`,
       newSecretClusterTemplate
     );
-    log(`Secret ${name}-apikey was successfully updated!`);
+    log(`Secret "${name}-apikey" was successfully updated!`);
     return;
   } catch (err) {
-    log(`Secret ${name}-apikey is not available. Creating...`);
+    log(`Secret "${name}-apikey" is not available. Creating...`);
   }
   try {
     k8sCoreApi.createNamespacedSecret(`${namespace}`, newSecretClusterTemplate);
-    log(`Secret ${name}-apikey was successfully created!`);
+    log(`Secret "${name}-apikey" was successfully created!`);
   } catch (err) {
     log(err);
   }
@@ -91,23 +92,23 @@ export const applyConfigmapCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`
     );
     const configmap = res.body;
-    log(`ConfigMap ${name} already exists! Trying to update...`);
+    log(`ConfigMap "${name}" already exists! Trying to update...`);
     k8sCoreApi.replaceNamespacedConfigMap(
       `${name}`,
       `${namespace}`,
       newConfigmapClusterTemplate
     );
-    log(`ConfigMap ${name} was successfully updated!`);
+    log(`ConfigMap "${name}" was successfully updated!`);
     return;
   } catch (err) {
-    log(`ConfigMap ${name} is not available. Creating...`);
+    log(`ConfigMap "${name}" is not available. Creating...`);
   }
   try {
     k8sCoreApi.createNamespacedConfigMap(
       `${namespace}`,
       newConfigmapClusterTemplate
     );
-    log(`ConfigMap ${name} was successfully created!`);
+    log(`ConfigMap "${name}" was successfully created!`);
   } catch (err) {
     log(err);
   }
@@ -125,23 +126,23 @@ export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`
     );
     const service = res.body;
-    log(`Service ${name}-headless already exists! Trying to update...`);
+    log(`Service "${name}-headless" already exists! Trying to update...`);
     k8sCoreApi.replaceNamespacedService(
       `${name}-headless`,
       `${namespace}`,
       newServiceHeadlessClusterTemplate
     );
-    log(`Service ${name}-headless was successfully updated!`);
+    log(`Service "${name}-headless" was successfully updated!`);
     return;
   } catch (err) {
-    log(`Service ${name}-headless is not available. Creating...`);
+    log(`Service "${name}-headless" is not available. Creating...`);
   }
   try {
     k8sCoreApi.createNamespacedService(
       `${namespace}`,
       newServiceHeadlessClusterTemplate
     );
-    log(`Service ${name}-headless was successfully created!`);
+    log(`Service "${name}-headless" was successfully created!`);
   } catch (err) {
     log(err);
   }
@@ -158,23 +159,60 @@ export const applyServiceCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`
     );
     const service = res.body;
-    log(`Service ${name} already exists! Trying to update...`);
+    log(`Service "${name}" already exists! Trying to update...`);
     k8sCoreApi.replaceNamespacedService(
       `${name}`,
       `${namespace}`,
       newServiceClusterTemplate
     );
-    log(`Service ${name} was successfully updated!`);
+    log(`Service "${name}" was successfully updated!`);
     return;
   } catch (err) {
-    log(`Service ${name} is not available. Creating...`);
+    log(`Service "${name}" is not available. Creating...`);
   }
   try {
     k8sCoreApi.createNamespacedService(
       `${namespace}`,
       newServiceClusterTemplate
     );
-    log(`Service ${name} was successfully created!`);
+    log(`Service "${name}" was successfully created!`);
+  } catch (err) {
+    log(err);
+  }
+};
+
+export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
+  if (apiObj.spec.replicas == 1) {
+    return;
+  }
+
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const newPdbClusterTemplate = clusterPdbTemplate(apiObj);
+
+  try {
+    const res = await k8sPolicyApi.readNamespacedPodDisruptionBudget(
+      `${name}`,
+      `${namespace}`
+    );
+    const pdb = res.body;
+    log(`PDB "${name}" already exists! Trying to update...`);
+    k8sPolicyApi.replaceNamespacedPodDisruptionBudget(
+      `${name}`,
+      `${namespace}`,
+      newPdbClusterTemplate
+    );
+    log(`PDB "${name}" was successfully updated!`);
+    return;
+  } catch (err) {
+    log(`PDB "${name}" is not available. Creating...`);
+  }
+  try {
+    k8sPolicyApi.createNamespacedPodDisruptionBudget(
+      `${namespace}`,
+      newPDBClusterTemplate
+    );
+    log(`PDB "${name}" was successfully created!`);
   } catch (err) {
     log(err);
   }
