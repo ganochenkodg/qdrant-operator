@@ -4,7 +4,6 @@ import jsrender from 'jsrender';
 
 export const clusterTemplate = (apiObj) => {
   var template = jsrender.templates('./templates/statefulset.jsr');
-  console.log(template(apiObj));
   return yaml.load(template(apiObj));
 };
 

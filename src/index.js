@@ -30,8 +30,7 @@ const onEvent = async (phase, apiObj) => {
       log(err);
     }
   } else if (phase == 'DELETED') {
-    // await deleteResource(obj, k8sCoreApi);
-    console.log('Got delete event');
+    log(`${apiObj.kind} "${apiObj.metadata.name}" was deleted!`);
   } else {
     log(`Unknown event type: ${phase}`);
   }

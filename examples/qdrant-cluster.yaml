@@ -5,7 +5,7 @@ metadata:
 spec:
   replicas: 1
   image: qdrant/qdrant:1.7.3
-  # apikey: 'newkeyuu2'
+  apikey: 'newkeyuu2'
   config:
     cluster:
       enabled: false

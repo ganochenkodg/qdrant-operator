@@ -4,7 +4,7 @@ metadata:
   name: {{:metadata.name}}-headless
   namespace: {{:metadata.namespace}}
   ownerReferences:
-    apiVersion: {{:apiVersion}}
+  - apiVersion: {{:apiVersion}}
     kind: {{:kind}}
     name: {{:metadata.name}}
     uid: {{:metadata.uid}}

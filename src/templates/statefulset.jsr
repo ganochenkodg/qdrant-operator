@@ -4,7 +4,7 @@ metadata:
   name: {{:metadata.name}}
   namespace: {{:metadata.namespace}}
   ownerReferences:
-    apiVersion: {{:apiVersion}}
+  - apiVersion: {{:apiVersion}}
     kind: {{:kind}}
     name: {{:metadata.name}}
     uid: {{:metadata.uid}}
@@ -74,10 +74,12 @@ spec:
           - name: qdrant-secret
             mountPath: /qdrant/config/local.yaml
             subPath: local.yaml
+            readOnly: true
           {{/if}}
           {{if spec.tls.enabled }}
           - name: qdrant-cert
             mountPath: /qdrant/tls
+            readOnly: true
           {{/if}}
           - name: qdrant-snapshots
             mountPath: /qdrant/snapshots
@@ -92,7 +94,6 @@ spec:
         - name: qdrant-config
           configMap:
             name: {{:metadata.name}}
-            defaultMode: 0755
         - name: qdrant-snapshots
           emptyDir: {}
         - name: qdrant-init
@@ -101,13 +102,11 @@ spec:
         - name: qdrant-secret
           secret:
             secretName: {{:metadata.name}}-apikey
-            defaultMode: 0400
         {{/if}}
         {{if spec.tls.enabled }}
         - name: qdrant-cert
           secret:
             secretName: {{:spec.tls.secretName}}
-            defaultMode: 0400
         {{/if}}
   volumeClaimTemplates:
     - metadata:
@@ -117,6 +116,7 @@ spec:
           component: qdrant
       spec:
         storageClassName: {{:spec.persistence.storageClassName}}
+        accessModes: ["ReadWriteOnce"]
         resources:
           requests:
             storage: {{:spec.persistence.size}}
