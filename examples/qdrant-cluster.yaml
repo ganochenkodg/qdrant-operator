@@ -4,6 +4,7 @@ metadata:
   name: test
 spec:
   replicas: 1
+  image: qdrant/qdrant:1.7.3
   # apikey: 'newkeyuu2'
   config:
     cluster:
@@ -11,10 +12,12 @@ spec:
   persistence:
     size: 1Gi
     storageClassName: default
+  tls:
+    enabled: true
   resources:
     requests:
-      cpu: 200m
-      memory: 128Mi
+      cpu: 10m
+      memory: 100Mi
     limits:
-      cpu: 220m
-      memory: 128Mi
+      cpu: 500m
+      memory: 500Mi

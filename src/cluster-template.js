@@ -3,38 +3,9 @@ import { Str } from '@supercharge/strings';
 import jsrender from 'jsrender';
 
 export const clusterTemplate = (apiObj) => {
-  var name = apiObj.metadata.name;
-
-  var template = {
-    apiVersion: 'apps/v1',
-    kind: 'StatefulSet',
-    metadata: {
-      name: `${name}`,
-      namespace: `${apiObj.metadata.namespace}`,
-      labels: {
-        clustername: `${name}`,
-        component: 'qdrant'
-      }
-    },
-    spec: {
-      replicas: `${apiObj.spec.replicas}`
-    }
-  };
-  /*
-  var template = {
-    apiVersion: 'v1',
-    kind: 'Secret',
-    type: `${typeof apiObj.type !== 'undefined' ? apiObj.type : 'Opaque'}`,
-    metadata: {
-      name: `${apiObj.metadata.name}`,
-      namespace: `${apiObj.metadata.namespace}`
-    },
-    data: {}
-  };
-  template.data = apiObj.data;
-  */
-
-  return template;
+  var template = jsrender.templates('./templates/statefulset.jsr');
+  console.log(template(apiObj));
+  return yaml.load(template(apiObj));
 };
 
 export const clusterSecretTemplate = (apiObj) => {
@@ -44,6 +15,15 @@ export const clusterSecretTemplate = (apiObj) => {
     apiObj.spec.apikey == true ? Str.random(32) : apiObj.spec.apikey;
   jsontemplate.data['api-key'] = btoa(apikey);
   jsontemplate.data['local.yaml'] = btoa('service:\n  api_key: ' + apikey);
+  return jsontemplate;
+};
+
+export const clusterSecretCertTemplate = (apiObj, cert) => {
+  var template = jsrender.templates('./templates/secret-server-cert.jsr');
+  var jsontemplate = yaml.load(template(apiObj));
+  jsontemplate.data['cert.pem'] = btoa(cert['cert.pem']);
+  jsontemplate.data['key.pem'] = btoa(cert['key.pem']);
+  jsontemplate.data['cacert.pem'] = btoa(cert['cacert.pem']);
   return jsontemplate;
 };
 

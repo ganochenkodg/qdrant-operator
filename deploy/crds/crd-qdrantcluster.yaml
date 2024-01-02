@@ -43,12 +43,14 @@ spec:
             description: "Specs of the Qdrant cluster"
             type: object
             x-kubernetes-preserve-unknown-fields: true
-            required: ["replicas"]
+            required: ["replicas","image"]
             properties:
               apikey:
                 description: "Enable or disable or use pre-defined apikey"
                 type: string
                 default: "false"
+              image:
+                type: string
               config:
                 description: "Custom Qdrant configuration"
                 type: object
@@ -60,6 +62,16 @@ spec:
                 type: string
                 enum: ["ClusterIP", "NodePort", "LoadBalancer"]
                 default: ClusterIP
+              persistence:
+                description: "Parameters for dynamic volume claims"
+                type: object
+                required: ["size"]
+                properties:
+                  size:
+                    type: string
+                    pattern: '^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$'
+                  storageClassName:
+                    type: string
               resources:
                 type: object
                 properties:
@@ -81,6 +93,274 @@ spec:
                       memory:
                         type: string
                         pattern: '^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$'
+              tls:
+                type: object
+                required: ["enabled"]
+                properties:
+                  enabled:
+                    type: boolean
+                  secretName:
+                    type: string
+              # scheduling options
+              tolerations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    operator:
+                      type: string
+                      enum:
+                        - Equal
+                        - Exists
+                    value:
+                      type: string
+                    effect:
+                      type: string
+                      enum:
+                        - NoExecute
+                        - NoSchedule
+                        - PreferNoSchedule
+                    tolerationSeconds:
+                      type: integer
+              nodeAffinity:
+                type: object
+                properties:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - preference
+                      - weight
+                      properties:
+                        preference:
+                          type: object
+                          properties:
+                            matchExpressions:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - key
+                                - operator
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                            matchFields:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - key
+                                - operator
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                        weight:
+                          format: int32
+                          type: integer
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    type: object
+                    required:
+                    - nodeSelectorTerms
+                    properties:
+                      nodeSelectorTerms:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            matchExpressions:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - key
+                                - operator
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                            matchFields:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - key
+                                - operator
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+              podAntiAffinity:
+                type: object
+                properties:
+                  preferredDuringSchedulingIgnoredDuringExecution:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        podAffinityTerm:
+                          type: object
+                          properties:
+                            labelSelector:
+                              type: object
+                              properties:
+                                matchExpressions:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        type: array
+                                        items:
+                                          type: string
+                                matchLabels:
+                                  x-kubernetes-preserve-unknown-fields: true
+                                  type: object
+                            namespaceSelector:
+                              type: object
+                              properties:
+                                matchExpressions:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        type: array
+                                        items:
+                                          type: string
+                                matchLabels:
+                                  x-kubernetes-preserve-unknown-fields: true
+                                  type: object
+                            namespaces:
+                              type: array
+                              items:
+                                type: string
+                            topologyKey:
+                              type: string
+                        weight:
+                          type: integer
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        labelSelector:
+                          type: object
+                          properties:
+                            matchExpressions:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                            matchLabels:
+                              x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                        namespaceSelector:
+                          type: object
+                          properties:
+                            matchExpressions:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                            matchLabels:
+                              x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                        namespaces:
+                          type: array
+                          items:
+                            type: string
+                        topologyKey:
+                          type: string
+              topologySpreadConstraints:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    labelSelector:
+                      type: object
+                      properties:
+                        matchExpressions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key:
+                                type: string
+                              operator:
+                                type: string
+                              values:
+                                type: array
+                                items:
+                                  type: string
+                        matchLabels:
+                          x-kubernetes-preserve-unknown-fields: true
+                          type: object
+                    matchLabelKeys:
+                      type: array
+                      items:
+                        type: string
+                    maxSkew:
+                      type: integer
+                    minDomains:
+                      type: integer
+                    nodeAffinityPolicy:
+                      type: string
+                    nodeTaintsPolicy:
+                      type: string
+                    topologyKey:
+                      type: string
+                    whenUnsatisfiable:
+                      type: string
           status:
             type: object
             properties:

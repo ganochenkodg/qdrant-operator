@@ -49,8 +49,6 @@ metadata:
 data:
   CLUSTER_DOMAIN: "cluster.local"
   DEBUG_MODE: "true"
-  QDRANT_REPO: "qdrant/qdrant"
-  QDRANT_TAG: "1.7.3"
 ---
 apiVersion: apps/v1
 kind: Deployment

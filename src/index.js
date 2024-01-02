@@ -18,6 +18,7 @@ kc.loadFromDefault();
 const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sCustomApi = kc.makeApiClient(k8s.CustomObjectsApi);
 const k8sPolicyApi = kc.makeApiClient(k8s.PolicyV1Api);
+const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 const watch = new k8s.Watch(kc);
 
 const onEvent = async (phase, apiObj) => {
@@ -73,6 +74,7 @@ const applyNow = async (apiObj) => {
   await applyServiceHeadlessCluster(apiObj, k8sCoreApi);
   await applyServiceCluster(apiObj, k8sCoreApi);
   await applyPdbCluster(apiObj, k8sPolicyApi);
+  await applyCluster(apiObj, k8sAppsApi, k8sCoreApi);
   // await applyCluster(apiObj, k8sCoreApi);
 };
 

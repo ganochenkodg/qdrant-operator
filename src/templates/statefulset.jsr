@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{:metadata.name}}
+  namespace: {{:metadata.namespace}}
+  ownerReferences:
+    apiVersion: {{:apiVersion}}
+    kind: {{:kind}}
+    name: {{:metadata.name}}
+    uid: {{:metadata.uid}}
+  labels:
+    clustername: {{:metadata.name}}
+    component: qdrant
+spec:
+  replicas: {{:spec.replicas}}
+  selector:
+    matchLabels:
+      clustername: {{:metadata.name}}
+      component: qdrant
+  serviceName: {{:metadata.name}}-headless
+  template:
+    metadata:
+      labels:
+        clustername: {{:metadata.name}}
+        component: qdrant
+    spec:
+      containers:
+        - name: qdrant
+          image: "{{:spec.image}}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: QDRANT_INIT_FILE_PATH
+              value: /qdrant/init/.qdrant-initialized
+          {{if spec.tls.enabled}}
+            - name: QDRANT__SERVICE__ENABLE_TLS
+              value: "1"
+          {{/if}}
+          command: ["/bin/bash", "-c"]
+          args: ["./config/initialize.sh"]
+          ports:
+          - name: http
+            containerPort: 6333
+          - name: grpc
+            containerPort: 6334
+          - name: p2p
+            containerPort: 6335
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 6333
+              {{if spec.tls.enabled }}
+              scheme: HTTPS
+              {{/if}}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 6
+            successThreshold: 1
+          resources:
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "3"]
+          volumeMounts:
+          - name: qdrant-storage
+            mountPath: /qdrant/storage
+          - name: qdrant-config
+            mountPath: /qdrant/config/initialize.sh
+            subPath: initialize.sh
+          - name: qdrant-config
+            mountPath: /qdrant/config/production.yaml
+            subPath: production.yaml
+          {{if spec.apikey != 'false' }}
+          - name: qdrant-secret
+            mountPath: /qdrant/config/local.yaml
+            subPath: local.yaml
+          {{/if}}
+          {{if spec.tls.enabled }}
+          - name: qdrant-cert
+            mountPath: /qdrant/tls
+          {{/if}}
+          - name: qdrant-snapshots
+            mountPath: /qdrant/snapshots
+          - name: qdrant-init
+            mountPath: /qdrant/init
+      affinity:
+        nodeAffinity:
+        podAntiAffinity:
+      tolerations:
+      topologySpreadConstraints:
+      volumes:
+        - name: qdrant-config
+          configMap:
+            name: {{:metadata.name}}
+            defaultMode: 0755
+        - name: qdrant-snapshots
+          emptyDir: {}
+        - name: qdrant-init
+          emptyDir: {}
+        {{if spec.apikey != 'false' }}
+        - name: qdrant-secret
+          secret:
+            secretName: {{:metadata.name}}-apikey
+            defaultMode: 0400
+        {{/if}}
+        {{if spec.tls.enabled }}
+        - name: qdrant-cert
+          secret:
+            secretName: {{:spec.tls.secretName}}
+            defaultMode: 0400
+        {{/if}}
+  volumeClaimTemplates:
+    - metadata:
+        name: qdrant-storage
+        labels:
+          clustername: {{:metadata.name}}
+          component: qdrant
+      spec:
+        storageClassName: {{:spec.persistence.storageClassName}}
+        resources:
+          requests:
+            storage: {{:spec.persistence.size}}
+

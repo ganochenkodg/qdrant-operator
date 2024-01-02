@@ -3,10 +3,12 @@ import {
   clusterTemplate,
   clusterConfigmapTemplate,
   clusterSecretTemplate,
+  clusterSecretCertTemplate,
   clusterServiceHeadlessTemplate,
   clusterServiceTemplate,
   clusterPdbTemplate
 } from './cluster-template.js';
+import { generateCert } from './certificate.js';
 
 export const setStatus = async (apiObj, k8sCustomApi, status) => {
   const name = apiObj.metadata.name;
@@ -39,9 +41,50 @@ export const setStatus = async (apiObj, k8sCustomApi, status) => {
   }
 };
 
-export const applyCluster = async (apiObj, k8sCoreApi) => {
+export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+
+  if (typeof apiObj.spec.tls == 'undefined') {
+    apiObj.spec.tls = { enabled: false };
+  }
+  if (
+    apiObj.spec.tls.enabled &&
+    typeof apiObj.spec.tls.secretName == 'undefined'
+  ) {
+    try {
+      const res = await k8sCoreApi.readNamespacedSecret(
+        `${name}-server-cert`,
+        `${namespace}`
+      );
+      const secret = res.body;
+      log(
+        `Found generated CA and certificates in the Secret ${name}-server-cert.`
+      );
+      return;
+    } catch (err) {
+      log(`CA and certificates are not available. Creating...`);
+    }
+    try {
+      const cert = await generateCert(apiObj);
+      const newSecretCertClusterTemplate = clusterSecretCertTemplate(
+        apiObj,
+        cert
+      );
+      k8sCoreApi.createNamespacedSecret(
+        `${namespace}`,
+        newSecretCertClusterTemplate
+      );
+      apiObj.spec.tls.secretName = name + '-server-cert';
+      log(
+        `CA and certificates were successfully created and stored in the Secret "${name}-server-cert"!`
+      );
+    } catch (err) {
+      log(err);
+    }
+  }
+
   var newClusterTemplate = clusterTemplate(apiObj);
-  console.log(newClusterTemplate);
 };
 
 export const applySecretCluster = async (apiObj, k8sCoreApi) => {
