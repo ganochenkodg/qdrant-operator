@@ -72,6 +72,7 @@ spec:
                     pattern: '^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$'
                   storageClassName:
                     type: string
+                    default: "default"
               resources:
                 type: object
                 properties:

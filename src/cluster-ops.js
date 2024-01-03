@@ -10,38 +10,7 @@ import {
 } from './cluster-template.js';
 import { generateCert } from './certificate.js';
 
-export const setStatus = async (apiObj, k8sCustomApi, status) => {
-  const name = apiObj.metadata.name;
-  const namespace = apiObj.metadata.namespace;
-  const newStatus = {
-    apiVersion: apiObj.apiVersion,
-    kind: apiObj.kind,
-    metadata: {
-      name: name,
-      resourceVersion: apiObj.metadata.resourceVersion
-    },
-    status: {
-      qdrantStatus: status
-    }
-  };
-
-  try {
-    const res = await k8sCustomApi.replaceNamespacedCustomObjectStatus(
-      'qdrant.operator',
-      'v1alpha1',
-      namespace,
-      'qdrantclusters',
-      name,
-      newStatus
-    );
-
-    log(`The cluster "${name}" status now is ${status}.`);
-  } catch (err) {
-    log(err);
-  }
-};
-
-const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
+export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
   try {
@@ -95,6 +64,12 @@ export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
       `${name}`,
       `${namespace}`
     );
+    const cluster = res.body;
+
+    if (apiObj.spec.replicas < cluster.spec.replicas) {
+      log(`Warning: downscaling the cluster may result in data loss!`);
+    }
+
     log(`StatefulSet "${name}" already exists! Trying to update...`);
     k8sAppsApi.replaceNamespacedStatefulSet(
       `${name}`,

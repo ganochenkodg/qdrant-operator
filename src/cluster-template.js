@@ -4,7 +4,13 @@ import jsrender from 'jsrender';
 
 export const clusterTemplate = (apiObj) => {
   var template = jsrender.templates('./templates/statefulset.jsr');
-  return yaml.load(template(apiObj));
+  var persistence = typeof apiObj.spec.persistence !== 'undefined';
+  var jsontemplate = yaml.load(
+    template({ ...apiObj, ...{ persistence: persistence } })
+  );
+  jsontemplate.spec.template.spec.containers[0].resources =
+    typeof apiObj.spec.resources !== 'undefined' ? apiObj.spec.resources : {};
+  return jsontemplate;
 };
 
 export const clusterSecretTemplate = (apiObj) => {

@@ -74,12 +74,10 @@ spec:
           - name: qdrant-secret
             mountPath: /qdrant/config/local.yaml
             subPath: local.yaml
-            readOnly: true
           {{/if}}
           {{if spec.tls.enabled }}
           - name: qdrant-cert
             mountPath: /qdrant/tls
-            readOnly: true
           {{/if}}
           - name: qdrant-snapshots
             mountPath: /qdrant/snapshots
@@ -94,21 +92,29 @@ spec:
         - name: qdrant-config
           configMap:
             name: {{:metadata.name}}
+            defaultMode: 493
         - name: qdrant-snapshots
           emptyDir: {}
         - name: qdrant-init
           emptyDir: {}
+        {{if !persistence }}
+        - name: qdrant-storage
+          emptyDir: {}
+        {{/if}}
         {{if spec.apikey != 'false' }}
         - name: qdrant-secret
           secret:
             secretName: {{:metadata.name}}-apikey
+            defaultMode: 256
         {{/if}}
         {{if spec.tls.enabled }}
         - name: qdrant-cert
           secret:
             secretName: {{:spec.tls.secretName}}
+            defaultMode: 256
         {{/if}}
   volumeClaimTemplates:
+    {{if persistence }}
     - metadata:
         name: qdrant-storage
         labels:
@@ -120,4 +126,4 @@ spec:
         resources:
           requests:
             storage: {{:spec.persistence.size}}
-
+    {{/if}}
