@@ -1,8 +1,8 @@
 apiVersion: qdrant.operator/v1alpha1
 kind: QdrantCollection
 metadata:
-  name: test-col
+  name: my-collection
 spec:
-  cluster: test
+  cluster: my-cluster
   vectorSize: 10
 

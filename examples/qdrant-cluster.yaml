@@ -1,7 +1,7 @@
 apiVersion: qdrant.operator/v1alpha1
 kind: QdrantCluster
 metadata:
-  name: test
+  name: my-cluster
 spec:
   replicas: 1
   image: qdrant/qdrant:v1.7.3
@@ -9,9 +9,9 @@ spec:
   config:
     cluster:
       enabled: false
-  # persistence:
-  #  size: 1Gi
-  #  storageClassName: default
+  persistence:
+    size: 1Gi
+    storageClassName: default
   tls:
     enabled: true
   resources:
@@ -19,5 +19,40 @@ spec:
       cpu: 10m
       memory: 100Mi
     limits:
-      cpu: 650m
-      memory: 600Mi
+      cpu: 1000m
+      memory: 500Mi
+  tolerations:
+  - key: "app.stateful/component"
+    operator: "Equal"
+    value: "qdrant-operator"
+    effect: NoSchedule
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: "app.stateful/component"
+          operator: In
+          values:
+          - "qdrant-operator"
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: clustername
+            operator: In
+            values:
+            - my-cluster
+        topologyKey: kubernetes.io/hostname
+  topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: "topology.kubernetes.io/zone"
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: my-cluster
+        clusterId: kafka
+        platform.confluent.io/type: kafka
+

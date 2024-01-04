@@ -10,6 +10,14 @@ export const clusterTemplate = (apiObj) => {
   );
   jsontemplate.spec.template.spec.containers[0].resources =
     typeof apiObj.spec.resources !== 'undefined' ? apiObj.spec.resources : {};
+  jsontemplate.spec.template.spec.tolerations =
+    typeof apiObj.spec.tolerations !== 'undefined' ? apiObj.spec.tolerations : [];
+  jsontemplate.spec.template.spec.topologySpreadConstraints =
+    typeof apiObj.spec.topologySpreadConstraints !== 'undefined' ? apiObj.spec.topologySpreadConstraints : [];
+  jsontemplate.spec.template.spec.affinity.nodeAffinity =
+    typeof apiObj.spec.nodeAffinity !== 'undefined' ? apiObj.spec.nodeAffinity : {};
+  jsontemplate.spec.template.spec.affinity.podAntiAffinity =
+    typeof apiObj.spec.podAntiAffinity !== 'undefined' ? apiObj.spec.podAntiAffinity : {};
   return jsontemplate;
 };
 

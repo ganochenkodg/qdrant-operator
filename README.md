@@ -1,5 +1,5 @@
 <p style="text-align:center;" align="center">
-  <img src="logo.png" width="200"/></a>  
+  <img src="resources/logo.png" width="200"/></a>  
 </p>
 
 # qdrant-operator
