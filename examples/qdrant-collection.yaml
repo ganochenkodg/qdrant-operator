@@ -3,5 +3,6 @@ kind: QdrantCollection
 metadata:
   name: test-col
 spec:
-  test: value
-  foo: bar
+  cluster: test
+  vectorSize: 6
+

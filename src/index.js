@@ -7,10 +7,24 @@ import {
   applyServiceCluster,
   applyPdbCluster
 } from './cluster-ops.js';
+import Promise from 'bluebird';
+/*
+import {
+  createCollection,
+  updateCollection,
+  deleteCollection
+} from './collection-ops.js';
+*/
 
 const debugMode = process.env.DEBUG_MODE || 'false';
-let applyingScheduled = false;
-let settingStatus = '';
+var applyingScheduled = false;
+var settingStatus = '';
+var lastClusterResourceVersion = '';
+var lastCollectionResourceVersion = '';
+var clusterWatch = '';
+var collectionWatch = '';
+var clusterWatchStart = true;
+var collectionWatchStart = true;
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
 
@@ -20,11 +34,19 @@ const k8sPolicyApi = kc.makeApiClient(k8s.PolicyV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 const watch = new k8s.Watch(kc);
 
-const onEvent = async (phase, apiObj) => {
+const onEventCluster = async (phase, apiObj) => {
+  // ignore MODIFIED on status changes
   if (settingStatus == apiObj.metadata.name) {
     return;
   }
+  // ignore duplicated event on watch reconnections
+  if (lastClusterResourceVersion == apiObj.metadata.resourceVersion) {
+    return;
+  }
+  lastClusterResourceVersion = apiObj.metadata.resourceVersion;
+  console.log(apiObj);
   log(`Received event in phase ${phase}.`);
+
   if (['ADDED', 'MODIFIED'].includes(phase)) {
     try {
       scheduleApplying(apiObj);
@@ -33,31 +55,70 @@ const onEvent = async (phase, apiObj) => {
     }
   } else if (phase == 'DELETED') {
     log(`${apiObj.kind} "${apiObj.metadata.name}" was deleted!`);
-  } else {
-    log(`Unknown event type: ${phase}`);
   }
 };
 
-const onDone = (err) => {
-  log(`Connection closed. ${err}`);
+const onEventCollection = async (phase, apiObj) => {
+  // ignore duplicated event on watch reconnections
+  if (lastCollectionResourceVersion == apiObj.metadata.resourceVersion) {
+    return;
+  }
+  lastCollectionResourceVersion = apiObj.metadata.resourceVersion;
+  console.log(apiObj);
+  log(`Received event in phase ${phase}.`);
+  /*
+    if (phase == 'ADDED') {
+      scheduleApplying(apiObj);
+    } else if (phase == 'MODIFIED') {
+      scheduleApplying(apiObj);
+    } else if (phase == 'DELETED') {
+      await deleteResource(apiObj, k8sCoreApi);
+    }
+  */
+};
+
+const onDoneCluster = (err) => {
+  log(`Connection to QdrantClusters closed, reconnecting...`);
+  clusterWatchStart = true;
+  watchResource();
+};
+
+const onDoneCollection = (err) => {
+  log(`Connection to QdrantCollections closed, reconnecting...`);
+  collectionWatchStart = true;
   watchResource();
 };
 
 const watchResource = async () => {
   log('Watching API');
-  let clusterWatch = watch.watch(
-    '/apis/qdrant.operator/v1alpha1/qdrantclusters',
-    {},
-    onEvent,
-    onDone
-  );
-  let collectionWatch = watch.watch(
-    '/apis/qdrant.operator/v1alpha1/qdrantcollections',
-    {},
-    onEvent,
-    onDone
-  );
-  return Promise.any([clusterWatch, collectionWatch]);
+  //kill previous watchers if exist
+  var watchList = [];
+  if (clusterWatchStart) {
+    watchList.push(
+      watch.watch(
+        '/apis/qdrant.operator/v1alpha1/qdrantclusters',
+        {},
+        onEventCluster,
+        onDoneCluster
+      )
+    );
+    log('Watching QdrantClusters API');
+    clusterWatchStart = false;
+  }
+  if (collectionWatchStart) {
+    watchList.push(
+      watch.watch(
+        '/apis/qdrant.operator/v1alpha1/qdrantcollections',
+        {},
+        onEventCollection,
+        onDoneCollection
+      )
+    );
+    log('Watching QdrantCollections API');
+    collectionWatchStart = false;
+  }
+
+  return Promise.any(watchList);
 };
 
 const setStatus = async (apiObj, k8sCustomApi, status) => {
@@ -99,6 +160,20 @@ const setStatus = async (apiObj, k8sCustomApi, status) => {
   settingStatus = '';
 };
 
+const updateResourceVersion = async (apiObj, k8sCustomApi) => {
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const res = await k8sCustomApi.getNamespacedCustomObjectStatus(
+    'qdrant.operator',
+    'v1alpha1',
+    namespace,
+    'qdrantclusters',
+    name
+  );
+  const resCurrent = res.body;
+  lastClusterResourceVersion = resCurrent.metadata.resourceVersion;
+};
+
 const waitForClusterReadiness = (apiObj, k8sAppsApi, k8sCustomApi) => {
   let interval = setInterval(
     async function (apiObj, k8sAppsApi, k8sCustomApi) {
@@ -116,6 +191,7 @@ const waitForClusterReadiness = (apiObj, k8sAppsApi, k8sCustomApi) => {
         ) {
           log(`Cluster "${name}" is ready!`);
           await setStatus(apiObj, k8sCustomApi, 'Running');
+          await updateResourceVersion(apiObj, k8sCustomApi);
           clearInterval(interval);
         } else {
           log(
@@ -151,9 +227,8 @@ const applyNow = async (apiObj) => {
   await applyServiceCluster(apiObj, k8sCoreApi);
   await applyPdbCluster(apiObj, k8sPolicyApi);
   await applyCluster(apiObj, k8sAppsApi, k8sCoreApi);
+  updateResourceVersion(apiObj, k8sCustomApi);
   waitForClusterReadiness(apiObj, k8sAppsApi, k8sCustomApi);
-
-  // await applyCluster(apiObj, k8sCoreApi);
 };
 
 const main = async () => {
