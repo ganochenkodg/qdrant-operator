@@ -9,9 +9,9 @@ import {
 } from './cluster-ops.js';
 
 import {
-  createCollection
-  // updateCollection,
-  // deleteCollection
+  createCollection,
+  updateCollection,
+  deleteCollection
 } from './collection-ops.js';
 
 const debugMode = process.env.DEBUG_MODE || 'false';
@@ -42,7 +42,6 @@ const onEventCluster = async (phase, apiObj) => {
     return;
   }
   lastClusterResourceVersion = apiObj.metadata.resourceVersion;
-  console.log(apiObj);
   log(`Received event in phase ${phase}.`);
 
   if (['ADDED', 'MODIFIED'].includes(phase)) {
@@ -62,15 +61,14 @@ const onEventCollection = async (phase, apiObj) => {
     return;
   }
   lastCollectionResourceVersion = apiObj.metadata.resourceVersion;
-  console.log(apiObj);
   log(`Received event in phase ${phase}.`);
 
   if (phase == 'ADDED') {
     await createCollection(apiObj, k8sCustomApi, k8sCoreApi);
   } else if (phase == 'MODIFIED') {
-    //scheduleApplying(apiObj);
+    await updateCollection(apiObj, k8sCustomApi, k8sCoreApi);
   } else if (phase == 'DELETED') {
-    //await deleteResource(apiObj, k8sCoreApi);
+    await deleteCollection(apiObj, k8sCustomApi, k8sCoreApi);
   }
 };
 
@@ -98,7 +96,7 @@ const watchResource = async () => {
         onDoneCluster
       )
     );
-    log('Watching QdrantClusters API');
+    log('Watching QdrantClusters API.');
     clusterWatchStart = false;
   }
   if (collectionWatchStart) {
@@ -110,7 +108,7 @@ const watchResource = async () => {
         onDoneCollection
       )
     );
-    log('Watching QdrantCollections API');
+    log('Watching QdrantCollections API.');
     collectionWatchStart = false;
   }
 

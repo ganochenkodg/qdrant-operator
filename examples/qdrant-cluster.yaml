@@ -5,15 +5,15 @@ metadata:
 spec:
   replicas: 1
   image: qdrant/qdrant:v1.7.3
-  #apikey: 'newkey'
+  apikey: 'newkey'
   config:
     cluster:
       enabled: false
   # persistence:
   #  size: 1Gi
   #  storageClassName: default
-  #tls:
-  #  enabled: true
+  tls:
+    enabled: true
   resources:
     requests:
       cpu: 10m

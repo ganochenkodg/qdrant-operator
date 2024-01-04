@@ -50,6 +50,7 @@ data:
   CLUSTER_DOMAIN: "cluster.local"
   DEBUG_MODE: "true"
   NODE_TLS_REJECT_UNAUTHORIZED: "0"
+  NODE_OPTIONS: "--no-warnings"
 ---
 apiVersion: apps/v1
 kind: Deployment

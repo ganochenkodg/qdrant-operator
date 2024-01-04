@@ -4,5 +4,5 @@ metadata:
   name: test-col
 spec:
   cluster: test
-  vectorSize: 6
+  vectorSize: 10
 
