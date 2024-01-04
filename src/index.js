@@ -7,14 +7,12 @@ import {
   applyServiceCluster,
   applyPdbCluster
 } from './cluster-ops.js';
-import Promise from 'bluebird';
-/*
+
 import {
-  createCollection,
-  updateCollection,
-  deleteCollection
+  createCollection
+  // updateCollection,
+  // deleteCollection
 } from './collection-ops.js';
-*/
 
 const debugMode = process.env.DEBUG_MODE || 'false';
 var applyingScheduled = false;
@@ -66,15 +64,14 @@ const onEventCollection = async (phase, apiObj) => {
   lastCollectionResourceVersion = apiObj.metadata.resourceVersion;
   console.log(apiObj);
   log(`Received event in phase ${phase}.`);
-  /*
-    if (phase == 'ADDED') {
-      scheduleApplying(apiObj);
-    } else if (phase == 'MODIFIED') {
-      scheduleApplying(apiObj);
-    } else if (phase == 'DELETED') {
-      await deleteResource(apiObj, k8sCoreApi);
-    }
-  */
+
+  if (phase == 'ADDED') {
+    await createCollection(apiObj, k8sCustomApi, k8sCoreApi);
+  } else if (phase == 'MODIFIED') {
+    //scheduleApplying(apiObj);
+  } else if (phase == 'DELETED') {
+    //await deleteResource(apiObj, k8sCoreApi);
+  }
 };
 
 const onDoneCluster = (err) => {
@@ -90,8 +87,7 @@ const onDoneCollection = (err) => {
 };
 
 const watchResource = async () => {
-  log('Watching API');
-  //kill previous watchers if exist
+  //restart required watchers
   var watchList = [];
   if (clusterWatchStart) {
     watchList.push(
