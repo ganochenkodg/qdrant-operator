@@ -3,17 +3,22 @@ kind: QdrantCluster
 metadata:
   name: my-cluster
 spec:
-  replicas: 1
+  replicas: 3
   image: qdrant/qdrant:v1.7.3
-  apikey: 'newkey'
+  apikey: 'true'
+  # apikey: 'yourkey'
+  # Optional. If not declared - the operator will generate new random key
   config:
     cluster:
-      enabled: false
+      enabled: true
   persistence:
     size: 1Gi
     storageClassName: default
   tls:
     enabled: true
+    # secretName: secretname
+    # Optional. This secret should contain the next fields: cert.pem, key.pem and cacert.pem
+    # If not declared - the operator will generate new CA and certificate
   resources:
     requests:
       cpu: 10m
@@ -21,6 +26,7 @@ spec:
     limits:
       cpu: 1000m
       memory: 500Mi
+  # scheduling options
   tolerations:
   - key: "app.stateful/component"
     operator: "Equal"
@@ -52,7 +58,7 @@ spec:
     whenUnsatisfiable: DoNotSchedule
     labelSelector:
       matchLabels:
-        app: my-cluster
-        clusterId: kafka
-        platform.confluent.io/type: kafka
+        clustername: my-cluster
+        component: qdrant
+ 
 
