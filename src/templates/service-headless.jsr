@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{:metadata.name}}-headless
+  namespace: {{:metadata.namespace}}
+  ownerReferences:
+  - apiVersion: {{:apiVersion}}
+    kind: {{:kind}}
+    name: {{:metadata.name}}
+    uid: {{:metadata.uid}}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: http
+      port: 6333
+      targetPort: 6333
+    - name: grpc
+      port: 6334
+      targetPort: 6334
+    - name: p2p
+      port: 6335
+      targetPort: 6335
+  selector:
+    clustername: {{:metadata.name}}
+    component: qdrant
+

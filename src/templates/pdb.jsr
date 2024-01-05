@@ -1,0 +1,18 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{:metadata.name}}
+  namespace: {{:metadata.namespace}}
+  ownerReferences:
+  - apiVersion: {{:apiVersion}}
+    kind: {{:kind}}
+    name: {{:metadata.name}}
+    uid: {{:metadata.uid}}
+spec:
+  minAvailable: "50%"
+  selector:
+    matchLabels:
+      clustername: {{:metadata.name}}
+      component: qdrant
+
+
