@@ -10,7 +10,8 @@ spec:
   # Optional. If not declared - the operator will generate new random key
   config:
     cluster:
-      enabled: true
+      consensus:
+        tick_period_ms: 50
   persistence:
     size: 1Gi
     storageClassName: default
