@@ -3,7 +3,7 @@
 </p>
 
 # qdrant-operator
-Kubernetes operator for Qdrant
+Kubernetes operator for the [Qdrant](https://github.com/qdrant/qdrant) Vector Database.
 
 ## Quickstart
 
