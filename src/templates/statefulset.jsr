@@ -35,6 +35,10 @@ spec:
             - name: QDRANT__SERVICE__ENABLE_TLS
               value: "1"
           {{/if}}
+          {{if spec.replicas > 1}}
+            - name: QDRANT__CLUSTER__ENABLED
+              value: "true"
+          {{/if}}
           command: ["/bin/bash", "-c"]
           args: ["./config/initialize.sh"]
           ports:
