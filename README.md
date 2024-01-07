@@ -97,7 +97,7 @@ Check operator's logs to ensure cluster is running now:
 1/5/2024, 12:14:54 AM: The cluster "my-cluster" status now is Running.
 ```
 
-There are two mandatory parameters - `replicas` and `image`. You can check minimal and complete YAMl manifests in the [examples](examples) folder.
+There are two mandatory parameters - `replicas` and `image`. You can check minimal and complete YAML manifests in the [examples](examples) folder.
 
 By default there are no replication, resources, data persistence and scheduling options configured.
 
