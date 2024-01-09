@@ -71,11 +71,11 @@ spec:
       serviceAccountName: qdrant-operator-sa
       containers:
       - name: operator
-        image: docker.io/dganochenko/qdrant-operator:0.1.1
+        image: docker.io/dganochenko/qdrant-operator:0.1.2
         imagePullPolicy: Always
         # debug
-        # command: ["/bin/sh"]
-        # args: ["-c", "while true; do echo hello; sleep 10;done"]
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do echo hello; sleep 10;done"]
         envFrom:
         - configMapRef:
             name: qdrant-operator-config

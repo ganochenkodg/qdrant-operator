@@ -108,7 +108,7 @@ spec:
         {{if spec.apikey != 'false' }}
         - name: qdrant-secret
           secret:
-            secretName: {{:metadata.name}}-apikey
+            secretName: {{:metadata.name}}-auth-config
             defaultMode: 256
         {{/if}}
         {{if spec.tls.enabled }}

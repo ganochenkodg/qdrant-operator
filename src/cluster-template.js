@@ -1,5 +1,4 @@
 import yaml from 'js-yaml';
-import { Str } from '@supercharge/strings';
 import jsrender from 'jsrender';
 
 export const clusterTemplate = (apiObj) => {
@@ -11,23 +10,48 @@ export const clusterTemplate = (apiObj) => {
   jsontemplate.spec.template.spec.containers[0].resources =
     typeof apiObj.spec.resources !== 'undefined' ? apiObj.spec.resources : {};
   jsontemplate.spec.template.spec.tolerations =
-    typeof apiObj.spec.tolerations !== 'undefined' ? apiObj.spec.tolerations : [];
+    typeof apiObj.spec.tolerations !== 'undefined'
+      ? apiObj.spec.tolerations
+      : [];
   jsontemplate.spec.template.spec.topologySpreadConstraints =
-    typeof apiObj.spec.topologySpreadConstraints !== 'undefined' ? apiObj.spec.topologySpreadConstraints : [];
+    typeof apiObj.spec.topologySpreadConstraints !== 'undefined'
+      ? apiObj.spec.topologySpreadConstraints
+      : [];
   jsontemplate.spec.template.spec.affinity.nodeAffinity =
-    typeof apiObj.spec.nodeAffinity !== 'undefined' ? apiObj.spec.nodeAffinity : {};
+    typeof apiObj.spec.nodeAffinity !== 'undefined'
+      ? apiObj.spec.nodeAffinity
+      : {};
   jsontemplate.spec.template.spec.affinity.podAntiAffinity =
-    typeof apiObj.spec.podAntiAffinity !== 'undefined' ? apiObj.spec.podAntiAffinity : {};
+    typeof apiObj.spec.podAntiAffinity !== 'undefined'
+      ? apiObj.spec.podAntiAffinity
+      : {};
   return jsontemplate;
 };
 
-export const clusterSecretTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/secret.jsr');
+export const clusterAuthSecretTemplate = (apiObj, apikey, readApikey) => {
+  var template = jsrender.templates('./templates/secret-auth-config.jsr');
   var jsontemplate = yaml.load(template(apiObj));
-  const apikey =
-    apiObj.spec.apikey == true ? Str.random(32) : apiObj.spec.apikey;
+  if (readApikey == 'false') {
+    jsontemplate.data['local.yaml'] = btoa('service:\n  api_key: ' + apikey);
+  } else {
+    jsontemplate.data['local.yaml'] = btoa(
+      'service:\n  api_key: ' + apikey + '\n  read_only_api_key: ' + readApikey
+    );
+  }
+  return jsontemplate;
+};
+
+export const clusterSecretTemplate = (apiObj, apikey) => {
+  var template = jsrender.templates('./templates/secret-apikey.jsr');
+  var jsontemplate = yaml.load(template(apiObj));
   jsontemplate.data['api-key'] = btoa(apikey);
-  jsontemplate.data['local.yaml'] = btoa('service:\n  api_key: ' + apikey);
+  return jsontemplate;
+};
+
+export const clusterReadSecretTemplate = (apiObj, readApikey) => {
+  var template = jsrender.templates('./templates/secret-read-apikey.jsr');
+  var jsontemplate = yaml.load(template(apiObj));
+  jsontemplate.data['api-key'] = btoa(readApikey);
   return jsontemplate;
 };
 

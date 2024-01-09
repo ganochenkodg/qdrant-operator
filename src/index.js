@@ -2,7 +2,9 @@ import * as k8s from '@kubernetes/client-node';
 import {
   applyCluster,
   applyConfigmapCluster,
+  applyReadSecretCluster,
   applySecretCluster,
+  applyAuthSecretCluster,
   applyServiceHeadlessCluster,
   applyServiceCluster,
   applyPdbCluster
@@ -216,7 +218,9 @@ const applyNow = async (apiObj) => {
   applyingScheduled = false;
   await setStatus(apiObj, k8sCustomApi, 'Pending');
   await applyConfigmapCluster(apiObj, k8sCoreApi);
-  await applySecretCluster(apiObj, k8sCoreApi);
+  const readApikey = await applyReadSecretCluster(apiObj, k8sCoreApi);
+  const apikey = await applySecretCluster(apiObj, k8sCoreApi);
+  await applyAuthSecretCluster(apiObj, k8sCoreApi, apikey, readApikey);
   await applyServiceHeadlessCluster(apiObj, k8sCoreApi);
   await applyServiceCluster(apiObj, k8sCoreApi);
   await applyPdbCluster(apiObj, k8sPolicyApi);
