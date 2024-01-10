@@ -8,6 +8,9 @@ spec:
   apikey: 'true'
   # apikey: 'yourkey'
   # Optional. If not declared - the operator will generate new random key
+  readApikey: 'true'
+  # readApikey: 'yourreadonlykey'
+  # Optional. Can be declared if spec.apikey enabled only
   config:
     cluster:
       consensus:
@@ -18,6 +21,12 @@ spec:
   tls:
     enabled: true
     # secretName: secretname
+    # Optional. This secret should contain the next fields: cert.pem, key.pem and cacert.pem
+    # If not declared - the operator will generate new CA and certificate
+    # !! future options !!
+    internodeEnabled: true
+    mtls: true
+    # clientSecretName: clientsecretname
     # Optional. This secret should contain the next fields: cert.pem, key.pem and cacert.pem
     # If not declared - the operator will generate new CA and certificate
   resources:

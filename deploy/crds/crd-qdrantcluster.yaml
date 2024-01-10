@@ -42,11 +42,21 @@ spec:
           spec:
             description: "Specs of the Qdrant cluster"
             type: object
-            x-kubernetes-preserve-unknown-fields: true
+            x-kubernetes-validations:
+            - rule: (self.apikey == 'false' && self.readApikey == 'false') || ( self.apikey != 'false')
+              message: "spec.readApikey can be used only with spec.apikey enabled"
+            - rule: (self.tls.enabled == false && self.tls.mtls == false) || ( self.tls.enabled != false)
+              message: "spec.tls.mtls can be used only with spec.tls.enabled"
+            - rule: (self.tls.enabled == false && self.tls.internodeEnabled == false) || ( self.tls.enabled != false)
+              message: "spec.tls.internodeEnabled can be used only with spec.tls.enabled"
             required: ["replicas","image"]
             properties:
               apikey:
                 description: "Enable or disable or use pre-defined apikey"
+                type: string
+                default: "false"
+              readApikey:
+                description: "Enable or disable or use pre-defined readonly apikey"
                 type: string
                 default: "false"
               image:
@@ -97,10 +107,20 @@ spec:
               tls:
                 type: object
                 required: ["enabled"]
+                default: {enabled: false}
                 properties:
                   enabled:
                     type: boolean
+                    default: false
                   secretName:
+                    type: string
+                  internodeEnabled:
+                    type: boolean
+                    default: false
+                  mtls:
+                    type: boolean
+                    default: false
+                  clientSecretName:
                     type: string
               # scheduling options
               tolerations:

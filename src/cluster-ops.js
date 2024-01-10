@@ -2,6 +2,8 @@ import { log } from './index.js';
 import {
   clusterTemplate,
   clusterConfigmapTemplate,
+  clusterAuthSecretTemplate,
+  clusterReadSecretTemplate,
   clusterSecretTemplate,
   clusterSecretCertTemplate,
   clusterServiceHeadlessTemplate,
@@ -9,6 +11,7 @@ import {
   clusterPdbTemplate
 } from './cluster-template.js';
 import { generateCert } from './certificate.js';
+import { Str } from '@supercharge/strings';
 
 export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
@@ -89,14 +92,62 @@ export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
   }
 };
 
-export const applySecretCluster = async (apiObj, k8sCoreApi) => {
-  if (apiObj.spec.apikey == 'false') {
+export const applyAuthSecretCluster = async (
+  apiObj,
+  k8sCoreApi,
+  apikey,
+  readApikey
+) => {
+  if (apikey == 'false') {
     return;
   }
 
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newSecretClusterTemplate = clusterSecretTemplate(apiObj);
+  const newAuthSecretClusterTemplate = clusterAuthSecretTemplate(
+    apiObj,
+    apikey,
+    readApikey
+  );
+
+  try {
+    const res = await k8sCoreApi.readNamespacedSecret(
+      `${name}-auth-config`,
+      `${namespace}`
+    );
+    const secret = res.body;
+    log(`Secret "${name}-auth-config" already exists!`);
+    k8sCoreApi.replaceNamespacedSecret(
+      `${name}-auth-config`,
+      `${namespace}`,
+      newAuthSecretClusterTemplate
+    );
+    log(`Secret "${name}-auth-config" was successfully updated!`);
+    return;
+  } catch (err) {
+    log(`Secret "${name}-auth-config" is not available. Creating...`);
+  }
+  try {
+    k8sCoreApi.createNamespacedSecret(
+      `${namespace}`,
+      newAuthSecretClusterTemplate
+    );
+    log(`Secret "${name}-auth-config" was successfully created!`);
+  } catch (err) {
+    log(err);
+  }
+};
+
+export const applySecretCluster = async (apiObj, k8sCoreApi) => {
+  if (apiObj.spec.apikey == 'false') {
+    return 'false';
+  }
+
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const apikey =
+    apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.apikey;
+  const newSecretClusterTemplate = clusterSecretTemplate(apiObj, apikey);
 
   try {
     const res = await k8sCoreApi.readNamespacedSecret(
@@ -106,7 +157,7 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
     const secret = res.body;
     log(`Secret "${name}-apikey" already exists!`);
     if (['true', atob(secret.data['api-key'])].includes(apiObj.spec.apikey)) {
-      return;
+      return atob(secret.data['api-key']);
     }
     k8sCoreApi.replaceNamespacedSecret(
       `${name}-apikey`,
@@ -114,13 +165,62 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
       newSecretClusterTemplate
     );
     log(`Secret "${name}-apikey" was successfully updated!`);
-    return;
+    return apikey;
   } catch (err) {
     log(`Secret "${name}-apikey" is not available. Creating...`);
   }
   try {
     k8sCoreApi.createNamespacedSecret(`${namespace}`, newSecretClusterTemplate);
     log(`Secret "${name}-apikey" was successfully created!`);
+    return apikey;
+  } catch (err) {
+    log(err);
+  }
+};
+
+export const applyReadSecretCluster = async (apiObj, k8sCoreApi) => {
+  if (apiObj.spec.readApikey == 'false') {
+    return 'false';
+  }
+
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const readApikey =
+    apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.readApikey;
+  const newReadSecretClusterTemplate = clusterReadSecretTemplate(
+    apiObj,
+    readApikey
+  );
+
+  try {
+    const res = await k8sCoreApi.readNamespacedSecret(
+      `${name}-read-apikey`,
+      `${namespace}`
+    );
+    const secret = res.body;
+    log(`Secret "${name}-read-apikey" already exists!`);
+    if (
+      ['true', atob(secret.data['api-key'])].includes(apiObj.spec.readApikey)
+    ) {
+      return atob(secret.data['api-key']);
+    }
+    k8sCoreApi.replaceNamespacedSecret(
+      `${name}-read-apikey`,
+      `${namespace}`,
+      newReadSecretClusterTemplate
+    );
+    log(`Secret "${name}-read-apikey" was successfully updated!`);
+    return readApikey;
+  } catch (err) {
+    log(`Secret "${name}-read-apikey" is not available. Creating...`);
+  }
+  try {
+    k8sCoreApi.createNamespacedSecret(
+      `${namespace}`,
+      newReadSecretClusterTemplate
+    );
+    log(`Secret "${name}-read-apikey" was successfully created!`);
+    return readApikey;
   } catch (err) {
     log(err);
   }

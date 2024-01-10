@@ -1,0 +1,11 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCluster
+metadata:
+  name: my-cluster
+spec:
+  replicas: 1
+  image: qdrant/qdrant:v1.7.3
+  apikey: 'true'
+  # apikey: 'readwritekey'
+  readApikey: 'true'
+  # readApikey: 'readonlykey'
