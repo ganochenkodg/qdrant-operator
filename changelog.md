@@ -1,5 +1,10 @@
 # Changelog
 
+## qdrant-operator-0.1.2 (2024-01-10)
+
+Operator supports now to generate read-write and read-only apikeys with spec.apikey and spec.readApikey parameters. 
+Check the [authentication guide](docs/authentication.md) for getting more information.
+
 ## qdrant-operator-0.1.1 (2024-01-07)
 
 Using multiple replicas now automatically enables cluster mode and doesn't require for additional config.
