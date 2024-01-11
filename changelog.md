@@ -1,5 +1,9 @@
 # Changelog
 
+## qdrant-operator-0.1.3 (2024-01-11)
+
+Small bugfixes.
+
 ## qdrant-operator-0.1.2 (2024-01-10)
 
 Operator supports now to generate read-write and read-only apikeys with spec.apikey and spec.readApikey parameters. 
