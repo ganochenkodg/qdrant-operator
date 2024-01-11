@@ -49,12 +49,8 @@ spec:
           - name: p2p
             containerPort: 6335
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 6333
-              {{if spec.tls.enabled }}
-              scheme: HTTPS
-              {{/if}}
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 1

@@ -24,8 +24,6 @@ spec:
     storageClassName: default
   tls:
     enabled: true
-    internodeEnabled: true
-    mtls: true
   resources:
     requests:
       cpu: 10m

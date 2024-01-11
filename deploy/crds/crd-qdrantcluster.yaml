@@ -45,10 +45,6 @@ spec:
             x-kubernetes-validations:
             - rule: (self.apikey == 'false' && self.readApikey == 'false') || ( self.apikey != 'false')
               message: "spec.readApikey can be used only with spec.apikey enabled"
-            - rule: (self.tls.enabled == false && self.tls.mtls == false) || ( self.tls.enabled != false)
-              message: "spec.tls.mtls can be used only with spec.tls.enabled"
-            - rule: (self.tls.enabled == false && self.tls.internodeEnabled == false) || ( self.tls.enabled != false)
-              message: "spec.tls.internodeEnabled can be used only with spec.tls.enabled"
             required: ["replicas","image"]
             properties:
               apikey:
@@ -113,14 +109,6 @@ spec:
                     type: boolean
                     default: false
                   secretName:
-                    type: string
-                  internodeEnabled:
-                    type: boolean
-                    default: false
-                  mtls:
-                    type: boolean
-                    default: false
-                  clientSecretName:
                     type: string
               # scheduling options
               tolerations:
