@@ -1,6 +1,6 @@
 {
   "name": "qdrant-operator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Kubernetes operator for Qdrant",
   "main": "index.js",
   "type": "module",

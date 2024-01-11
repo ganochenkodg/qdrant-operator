@@ -50,9 +50,6 @@ export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
 
-  if (typeof apiObj.spec.tls == 'undefined') {
-    apiObj.spec.tls = { enabled: false };
-  }
   if (
     apiObj.spec.tls.enabled &&
     typeof apiObj.spec.tls.secretName == 'undefined'
@@ -351,7 +348,7 @@ export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
   try {
     k8sPolicyApi.createNamespacedPodDisruptionBudget(
       `${namespace}`,
-      newPDBClusterTemplate
+      newPdbClusterTemplate
     );
     log(`PDB "${name}" was successfully created!`);
   } catch (err) {

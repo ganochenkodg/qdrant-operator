@@ -14,8 +14,8 @@ data:
     SET_INDEX=${HOSTNAME##*-}
     echo "Starting initializing for pod $SET_INDEX"
     if [ "$SET_INDEX" = "0" ]; then
-      exec ./entrypoint.sh --uri 'http://{{:metadata.name}}-0.{{:metadata.name}}-headless:6335'
+      exec ./entrypoint.sh --uri 'http://{{:metadata.name}}-0.{{:metadata.name}}-headless.{{:metadata.namespace}}:6335'
     else
-      exec ./entrypoint.sh --bootstrap 'http://{{:metadata.name}}-0.{{:metadata.name}}-headless:6335' --uri 'http://{{:metadata.name}}-'"$SET_INDEX"'.{{:metadata.name}}-headless:6335'
+      exec ./entrypoint.sh --bootstrap 'http://{{:metadata.name}}-0.{{:metadata.name}}-headless.{{:metadata.namespace}}:6335' --uri 'http://{{:metadata.name}}-'"$SET_INDEX"'.{{:metadata.name}}-headless.{{:metadata.namespace}}:6335'
     fi
   production.yaml: ''  

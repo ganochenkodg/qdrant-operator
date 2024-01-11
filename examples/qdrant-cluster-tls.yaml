@@ -1,0 +1,11 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCluster
+metadata:
+  name: my-cluster
+spec:
+  replicas: 3
+  image: qdrant/qdrant:v1.7.3
+  tls:
+    enabled: true
+    mtls: true 
+

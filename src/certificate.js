@@ -136,7 +136,7 @@ const createServerCert = async (commonName, validDomains, rootCA) => {
   return {
     certificate: pemServerCert,
     privateKey: pemServerKey,
-    notAfter: newServerCert.validity.notBefore,
+    notBefore: newServerCert.validity.notBefore,
     notAfter: newServerCert.validity.notAfter
   };
 };
@@ -154,6 +154,7 @@ export const generateCert = async (apiObj) => {
       name + '-headless',
       name + '.' + namespace,
       name + '-headless.' + namespace,
+      '*.' + name + '-headless.' + namespace,
       '*.' + namespace + '.svc.' + clusterDomain
     ],
     CA
