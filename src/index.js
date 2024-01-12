@@ -18,7 +18,7 @@ import {
 
 const debugMode = process.env.DEBUG_MODE || 'false';
 var applyingScheduled = false;
-var settingStatus = '';
+var settingStatus = new Map();
 var lastClusterResourceVersion = '';
 var lastCollectionResourceVersion = '';
 var clusterWatch = '';
@@ -36,7 +36,7 @@ const watch = new k8s.Watch(kc);
 
 const onEventCluster = async (phase, apiObj) => {
   // ignore MODIFIED on status changes
-  if (settingStatus == apiObj.metadata.name) {
+  if (settingStatus.has(apiObj.metadata.name)) {
     return;
   }
   // ignore duplicated event on watch reconnections
@@ -120,7 +120,7 @@ const watchResource = async () => {
 const setStatus = async (apiObj, k8sCustomApi, status) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  settingStatus = name;
+  settingStatus.set(name, 'update');
   const readObj = await k8sCustomApi.getNamespacedCustomObjectStatus(
     'qdrant.operator',
     'v1alpha1',
@@ -153,7 +153,7 @@ const setStatus = async (apiObj, k8sCustomApi, status) => {
   } catch (err) {
     log(err);
   }
-  settingStatus = '';
+  settingStatus.delete(name);
 };
 
 const updateResourceVersion = async (apiObj, k8sCustomApi) => {
@@ -225,7 +225,7 @@ const applyNow = async (apiObj) => {
   await applyServiceCluster(apiObj, k8sCoreApi);
   await applyPdbCluster(apiObj, k8sPolicyApi);
   await applyCluster(apiObj, k8sAppsApi, k8sCoreApi);
-  updateResourceVersion(apiObj, k8sCustomApi);
+  await updateResourceVersion(apiObj, k8sCustomApi);
   waitForClusterReadiness(apiObj, k8sAppsApi, k8sCustomApi);
 };
 

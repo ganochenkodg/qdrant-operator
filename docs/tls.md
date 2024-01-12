@@ -82,3 +82,6 @@ You will see a similar output:
 
 6. Press `CTRL-D` to exit the pod shell.
 
+You can also use your own certificates by setting the `spec.tls.parameter` to the name of the secret, which contains the files `cert.pem`, `key.pem` and `cacert.pem`. 
+Self-signed certificates can't be used because Qdrant verifies certificates using CA during peer-to-peer communication.
+
