@@ -1,5 +1,11 @@
 # Changelog
 
+## qdrant-operator-0.1.4 (2024-01-12)
+
+- Refactor the settingStatus function code.
+- TLS now includes encryption for both client and internode connections. Change the certificate generation method.
+- Resolve the event race between operator replicas.
+
 ## qdrant-operator-0.1.3 (2024-01-11)
 
 Small bugfixes.

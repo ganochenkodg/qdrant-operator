@@ -22,7 +22,7 @@ export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
       `${namespace}`
     );
     log(
-      `Found generated CA and certificates in the Secret ${name}-server-cert.`
+      `Found generated CA and server certificate in the Secret ${name}-server-cert.`
     );
     return;
   } catch (err) {
@@ -334,13 +334,7 @@ export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
       `${name}`,
       `${namespace}`
     );
-    log(`PDB "${name}" already exists! Trying to update...`);
-    k8sPolicyApi.replaceNamespacedPodDisruptionBudget(
-      `${name}`,
-      `${namespace}`,
-      newPdbClusterTemplate
-    );
-    log(`PDB "${name}" was successfully updated!`);
+    log(`PDB "${name}" already exists!`);
     return;
   } catch (err) {
     log(`PDB "${name}" is not available. Creating...`);

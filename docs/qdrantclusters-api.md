@@ -57,16 +57,9 @@ spec:
 
 - **tls** (object, optional): TLS (Transport Layer Security) configuration for the cluster.
 
-  - **enabled** (boolean, optional): Enable or disable TLS for communication within the cluster.
-
-  - **internodeEnabled** (boolean, optional): Enable or disable internode TLS communication.
-
-  - **mtls** (boolean, optional): Enable or disable mutual TLS for secure communication, requires valid client certificate.
+  - **enabled** (boolean, optional): Enable or disable TLS both for client and internode connections within the cluster.
 
   - **secretName** (string, optional): Secret name containing cert.pem, key.pem, and cacert.pem for Server TLS. If not declared, the operator will generate a new CA and certificate.
-
-  - **clientSecretName** (string, optional): Secret name containing cert.pem, key.pem, and cacert.pem for Client TLS. If not declared, the operator will generate a new CA and certificate.
-
 
 - **resources** (object, optional): Resource requests and limits for the Qdrant cluster.
 

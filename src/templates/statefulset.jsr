@@ -33,7 +33,9 @@ spec:
               value: /qdrant/init/.qdrant-initialized
           {{if spec.tls.enabled}}
             - name: QDRANT__SERVICE__ENABLE_TLS
-              value: "1"
+              value: "true"
+            - name: QDRANT__CLUSTER__P2P__ENABLE_TLS
+              value: "true"
           {{/if}}
           {{if spec.replicas > 1}}
             - name: QDRANT__CLUSTER__ENABLED
