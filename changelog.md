@@ -1,5 +1,9 @@
 # Changelog
 
+## qdrant-operator-0.1.5 (2024-01-13)
+
+- Added support for additional collection params with the `spec.config` spec. See the example: [examples/qdrant-collection-complete.yaml].
+
 ## qdrant-operator-0.1.4 (2024-01-12)
 
 - Refactor the settingStatus function code.
