@@ -29,4 +29,6 @@ spec:
 
 - **replicationFactor** (integer, optional): Number of replicas for each shard in the collection.
 
+- **config** (object, optional): Additional configuration for the Qdrant collection, including [indexing](https://qdrant.tech/documentation/concepts/indexing/#vector-index), [quantization](https://qdrant.tech/documentation/guides/quantization/) and [optimizer](https://qdrant.tech/documentation/concepts/optimizer/) parameters.
+
 Feel free to customize the values based on your specific requirements when creating or updating the QdrantCollection custom resource in your Kubernetes cluster.

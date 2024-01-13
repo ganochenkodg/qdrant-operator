@@ -5,7 +5,19 @@ metadata:
 spec:
   cluster: my-cluster
   vectorSize: 10
-  onDisk: true
+  onDisk: false
   shardNumber: 6
   replicationFactor: 2
-
+  config:
+    hnsw_config:
+      m: 16
+      ef_construct: 100
+      full_scan_threshold: 10000
+    optimizers_config:
+      deleted_threshold: 0.2
+      vacuum_min_vector_number: 1000
+    quantization_config:
+      scalar:
+        type: int8
+        quantile: 0.5
+        always_ram: true
