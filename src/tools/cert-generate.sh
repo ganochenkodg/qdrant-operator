@@ -81,5 +81,5 @@ openssl req -nodes -sha256 -new -key key.pem \
   -extensions v3_req -extfile csr.conf \
   -CAcreateserial -out cert.pem 2>/dev/null
 
-echo "Certificates for \"${NAME}\" are ready!"
+echo -n "Certificates for \"${NAME}\" are ready!"
 

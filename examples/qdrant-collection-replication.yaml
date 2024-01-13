@@ -1,0 +1,11 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCollection
+metadata:
+  name: my-collection
+spec:
+  cluster: my-cluster
+  vectorSize: 10
+  onDisk: true
+  shardNumber: 6
+  replicationFactor: 2
+

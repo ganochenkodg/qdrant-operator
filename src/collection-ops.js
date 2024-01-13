@@ -40,7 +40,7 @@ export const createCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     k8sCustomApi,
     k8sCoreApi
   );
-  const body = {
+  var body = {
     vectors: {
       size: apiObj.spec.vectorSize,
       distance: 'Cosine',
@@ -49,6 +49,9 @@ export const createCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     shard_number: apiObj.spec.shardNumber,
     replication_factor: apiObj.spec.replicationFactor
   };
+  if (typeof apiObj.spec.config !== 'undefined') {
+    body = { ...body, ...apiObj.spec.config };
+  }
   try {
     log(
       `Trying to create a Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
@@ -72,7 +75,7 @@ export const updateCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     k8sCustomApi,
     k8sCoreApi
   );
-  const body = {
+  var body = {
     vectors: {
       '': {
         size: apiObj.spec.vectorSize,
@@ -83,6 +86,9 @@ export const updateCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     shard_number: apiObj.spec.shardNumber,
     replication_factor: apiObj.spec.replicationFactor
   };
+  if (typeof apiObj.spec.config !== 'undefined') {
+    body = { ...body, ...apiObj.spec.config };
+  }
   try {
     log(
       `Trying to update a Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
