@@ -30,6 +30,9 @@ rules:
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "create", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "create", "update", "delete", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -64,10 +67,7 @@ metadata:
     app: qdrant-operator
     component: operator
 spec:
-  replicas: 1
-  # prevent MODIFIED events race between replicas
-  strategy:
-    type: Recreate
+  replicas: 3
   selector:
     matchLabels: *labels
   template:
@@ -78,7 +78,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: operator
-        image: docker.io/dganochenko/qdrant-operator:0.1.5
+        image: docker.io/dganochenko/qdrant-operator:0.2.0
         imagePullPolicy: Always
         # debug
         # command: ["/bin/sh"]
@@ -86,3 +86,12 @@ spec:
         envFrom:
         - configMapRef:
             name: qdrant-operator-config
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace

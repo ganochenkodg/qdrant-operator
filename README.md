@@ -9,6 +9,8 @@ Kubernetes operator for the [Qdrant](https://github.com/qdrant/qdrant) Vector Da
 
 ### Prerequisite
 
+To run the operator you need Kubernetes version 1.26+.
+
 The operator includes two custom resources - `QdrantCluster` and `QdrantCollection`. Install the CRDs by running the commands below:
 
 ```bash
@@ -51,9 +53,13 @@ kubectl logs deploy/qdrant-operator -n qdrant-operator
 ```
 
 ```console
-1/5/2024, 12:10:16 AM: Debug mode ON!
-1/5/2024, 12:10:16 AM: Watching QdrantClusters API.
-1/5/2024, 12:10:16 AM: Watching QdrantCollections API.
+Found 3 pods, using pod/qdrant-operator-6577f85799-ggkgm
+1/14/2024, 3:58:40 PM: Debug mode ON!
+1/14/2024, 3:58:40 PM: Status of "qdrant-operator-6577f85799-ggkgm": FOLLOWER. Trying to get leader status...
+1/14/2024, 3:58:41 PM: Locking started: true
+1/14/2024, 3:58:41 PM: Status of "qdrant-operator-6577f85799-ggkgm": LEADER.
+1/14/2024, 3:58:41 PM: Watching QdrantClusters API.
+1/14/2024, 3:58:41 PM: Watching QdrantCollections API.
 ```
 
 ### Usage
@@ -79,22 +85,20 @@ qdrantcluster.qdrant.operator/my-cluster created
 Check operator's logs to ensure cluster is running now:
 
 ```console
-1/5/2024, 12:14:27 AM: Received event in phase ADDED.
-1/5/2024, 12:14:28 AM: The cluster "my-cluster" status now is Pending.
-1/5/2024, 12:14:29 AM: ConfigMap "my-cluster" is not available. Creating...
-1/5/2024, 12:14:29 AM: ConfigMap "my-cluster" was successfully created!
-1/5/2024, 12:14:29 AM: Service "my-cluster-headless" is not available. Creating...
-1/5/2024, 12:14:29 AM: Service "my-cluster-headless" was successfully created!
-1/5/2024, 12:14:29 AM: Service "my-cluster" is not available. Creating...
-1/5/2024, 12:14:29 AM: Service "my-cluster" was successfully created!
-1/5/2024, 12:14:29 AM: StatefulSet "my-cluster" is not available. Creating...
-1/5/2024, 12:14:29 AM: StatefulSet "my-cluster" was successfully created!
-1/5/2024, 12:14:34 AM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/5/2024, 12:14:39 AM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/5/2024, 12:14:44 AM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/5/2024, 12:14:49 AM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/5/2024, 12:14:54 AM: Cluster "my-cluster" is ready!
-1/5/2024, 12:14:54 AM: The cluster "my-cluster" status now is Running.
+1/14/2024, 3:59:24 PM: Received event in phase ADDED.
+1/14/2024, 3:59:25 PM: The cluster "my-cluster" status now is Pending.
+1/14/2024, 3:59:25 PM: ConfigMap "my-cluster" is not available. Creating...
+1/14/2024, 3:59:25 PM: ConfigMap "my-cluster" was successfully created!
+1/14/2024, 3:59:25 PM: Service "my-cluster-headless" is not available. Creating...
+1/14/2024, 3:59:25 PM: Service "my-cluster-headless" was successfully created!
+1/14/2024, 3:59:26 PM: Service "my-cluster" is not available. Creating...
+1/14/2024, 3:59:26 PM: Service "my-cluster" was successfully created!
+1/14/2024, 3:59:26 PM: StatefulSet "my-cluster" is not available. Creating...
+1/14/2024, 3:59:26 PM: StatefulSet "my-cluster" was successfully created!
+1/14/2024, 3:59:31 PM: Cluster "my-cluster" is not ready: 0/1 are available.
+1/14/2024, 3:59:36 PM: Cluster "my-cluster" is not ready: 0/1 are available.
+1/14/2024, 3:59:41 PM: Cluster "my-cluster" is ready!
+1/14/2024, 3:59:41 PM: The cluster "my-cluster" status now is Running.
 ```
 
 There are two mandatory parameters - `replicas` and `image`. You can check minimal and complete YAML manifests in the [examples](examples) folder.
@@ -122,14 +126,24 @@ qdrantcollection.qdrant.operator/my-collection created
 Check logs:
 
 ```console
-1/5/2024, 12:19:43 AM: Received event in phase ADDED.
-1/5/2024, 12:19:43 AM: Trying to create a Collection "my-collection" in the Cluster "my-cluster"...
-1/5/2024, 12:19:44 AM: Status: ""ok"", time: "0.311443".
+1/14/2024, 4:01:43 PM: Received event in phase ADDED.
+1/14/2024, 4:01:43 PM: Trying to create a Collection "my-collection" in the Cluster "my-cluster"...
+1/14/2024, 4:01:44 PM: Status: ""ok"", time: "0.311443".
 ```
 
 There are two mandatory parameters - `cluster` with the cluster reference and `vectorSize`. Minimal and complete manifests are also stored in the [examples](examples) folder.
 
 By default disk storage is not configured and will use global cluster parameters, and shards number and replication factor are configured to `1` both.
+
+### Additional materials.
+
+Guides:
+
+- [TLS usage](docs/tls.md)
+- [Authentication](docs/authentication.md)
+- [Cluster architecture](docs/architecture.md)
+- [QdrantClusters API reference](docs/qdrantclusters-api.md)
+- [QdrantCollections API reference](docs/qdrantcollections-api.md)
 
 ## Why not Helm chart
 

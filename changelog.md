@@ -1,8 +1,12 @@
 # Changelog
 
+## qdrant-operator-0.2.0 (2024-01-14)
+
+The operator is working now in cluster mode (leader elections are performed by Kubernetes Leases).
+
 ## qdrant-operator-0.1.5 (2024-01-13)
 
-- Added support for additional collection params with the `spec.config` spec. See the example: [qdrant-collection-complete.yaml](examples/qdrant-collection-complete.yaml).
+Added support for additional collection params with the `spec.config` spec. See the example: [qdrant-collection-complete.yaml](examples/qdrant-collection-complete.yaml).
 
 ## qdrant-operator-0.1.4 (2024-01-12)
 

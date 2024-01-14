@@ -1,6 +1,6 @@
 {
   "name": "qdrant-operator",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Kubernetes operator for Qdrant",
   "main": "index.js",
   "type": "module",
@@ -23,6 +23,7 @@
   "homepage": "https://github.com/ganochenkodg/qdrant-operator#readme",
   "dependencies": {
     "@kubernetes/client-node": "^0.20.0",
+    "@nullplatform/k8s-lease-lock": "^0.1.4",
     "@supercharge/strings": "^2.0.0",
     "js-yaml": "^4.1.0",
     "jsrender": "^1.0.13"
