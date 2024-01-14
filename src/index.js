@@ -1,4 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
+import { K8SLock } from '@nullplatform/k8s-lease-lock';
 import {
   applyCluster,
   applyConfigmapCluster,
@@ -15,6 +16,18 @@ import {
   updateCollection,
   deleteCollection
 } from './collection-ops.js';
+
+// use Kubernetes Leases for leader election
+const lock = new K8SLock({
+  leaseName: 'qdrant-operator',
+  namespace: process.env.POD_NAMESPACE,
+  lockLeaserId: process.env.POD_NAME,
+  waitUntilLock: true,
+  createLeaseIfNotExist: true,
+  leaseDurationInSeconds: 30,
+  refreshLockInterval: 5000,
+  lockTryInterval: 5000
+});
 
 const debugMode = process.env.DEBUG_MODE || 'false';
 var applyingScheduled = false;
@@ -230,6 +243,14 @@ const applyNow = async (apiObj) => {
 };
 
 const main = async () => {
+  // leader election using leases
+  log(
+    `Status of "${process.env.POD_NAME}": FOLLOWER. Trying to get leader status...`
+  );
+  const lockInfo = await lock.startLocking();
+  log(`Locking started: ${lockInfo.isLocking}`);
+  log(`Status of "${process.env.POD_NAME}": LEADER.`);
+
   await watchResource();
 };
 
