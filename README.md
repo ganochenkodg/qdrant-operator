@@ -166,10 +166,6 @@ YAML examples:
 - [Qdrant collection with replication](examples/qdrant-collection-replication.yaml)
 - [Complete Qdrant collection](examples/qdrant-collection-complete.yaml)
 
-## Why not Helm chart
-
-The official [Qdrant Helm chart](https://github.com/qdrant/qdrant-helm) doesn't allow to manage collections, and its functionality is restricted to configure cluster resources only.
-
 ## Getting help
 
 If you encounter any issues while using Qdrant-operator, you can get help using [Github issues](https://github.com/ganochenkodg/qdrant-operator/issues).
