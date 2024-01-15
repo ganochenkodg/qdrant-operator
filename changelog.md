@@ -1,5 +1,9 @@
 # Changelog
 
+## qdrant-operator-0.2.0 (2024-01-15)
+
+Added graceful shutdown, leasing parameters were slightly tuned.
+
 ## qdrant-operator-0.2.0 (2024-01-14)
 
 The operator is working now in cluster mode (leader elections are performed by Kubernetes Leases).

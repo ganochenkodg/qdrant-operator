@@ -24,9 +24,9 @@ const lock = new K8SLock({
   lockLeaserId: process.env.POD_NAME,
   waitUntilLock: true,
   createLeaseIfNotExist: true,
-  leaseDurationInSeconds: 30,
-  refreshLockInterval: 5000,
-  lockTryInterval: 5000
+  leaseDurationInSeconds: 15,
+  refreshLockInterval: 3000,
+  lockTryInterval: 3000
 });
 
 const debugMode = process.env.DEBUG_MODE || 'false';
@@ -38,6 +38,7 @@ var clusterWatch = '';
 var collectionWatch = '';
 var clusterWatchStart = true;
 var collectionWatchStart = true;
+var lockId = '';
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
 
@@ -248,9 +249,8 @@ const main = async () => {
     `Status of "${process.env.POD_NAME}": FOLLOWER. Trying to get leader status...`
   );
   const lockInfo = await lock.startLocking();
-  log(`Locking started: ${lockInfo.isLocking}`);
+  lockId = lockInfo.lockId;
   log(`Status of "${process.env.POD_NAME}": LEADER.`);
-
   await watchResource();
 };
 
@@ -264,5 +264,11 @@ if (debugMode == 'true') {
     console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
   });
 }
+
+process.on('SIGTERM', async () => {
+  await lock.stopLocking(lockId);
+  log('Stopping gracefully...');
+  process.exit(0);
+});
 
 main();
