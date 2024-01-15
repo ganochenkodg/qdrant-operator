@@ -5,9 +5,21 @@
 # qdrant-operator
 Kubernetes operator for the [Qdrant](https://github.com/qdrant/qdrant) Vector Database.
 
-## Quickstart
+## Operator features
 
-### Prerequisite
+The operator provides the following functionality:
+
+- Creation of single-node and multi-node Qdrant clusters (distributed mode is automatically enabled when using multiple replicas).
+- Authentication support in the cluster using API keys with read-write and read-only permissions. Auto-generated and user-provided keys are supported.
+- TLS Encryption support for connections, both for client and peer-to-peer communication. Auto-generated and user-provided certificates are supported.
+- Support for setting custom Qdrant parameters.
+- Support for setting various scheduling options for the cluster (tolerations, affinities, topology spread).
+- Management of Qdrant collections, including configuration of replication, sharding, indexing, quantization, etc.
+- The operator works in cluster mode with leader elections, ensuring high availability.
+
+## Getting started
+
+### Installation
 
 To run the operator you need Kubernetes version 1.26+.
 
@@ -56,7 +68,6 @@ kubectl logs deploy/qdrant-operator -n qdrant-operator
 Found 3 pods, using pod/qdrant-operator-6577f85799-ggkgm
 1/14/2024, 3:58:40 PM: Debug mode ON!
 1/14/2024, 3:58:40 PM: Status of "qdrant-operator-6577f85799-ggkgm": FOLLOWER. Trying to get leader status...
-1/14/2024, 3:58:41 PM: Locking started: true
 1/14/2024, 3:58:41 PM: Status of "qdrant-operator-6577f85799-ggkgm": LEADER.
 1/14/2024, 3:58:41 PM: Watching QdrantClusters API.
 1/14/2024, 3:58:41 PM: Watching QdrantCollections API.
@@ -135,7 +146,7 @@ There are two mandatory parameters - `cluster` with the cluster reference and `v
 
 By default disk storage is not configured and will use global cluster parameters, and shards number and replication factor are configured to `1` both.
 
-### Additional materials.
+### Documentation
 
 Guides:
 
@@ -145,9 +156,23 @@ Guides:
 - [QdrantClusters API reference](docs/qdrantclusters-api.md)
 - [QdrantCollections API reference](docs/qdrantcollections-api.md)
 
+YAML examples:
+
+- [Minimal Qdrant cluster](examples/qdrant-cluster-minimal.yaml)
+- [Qdrant cluster with authentication](examples/qdrant-cluster-apikey.yaml)
+- [Qdrant cluster with TLS](examples/qdrant-cluster-tls.yaml)
+- [Complete Qdrant cluster](examples/qdrant-cluster-complete.yaml)
+- [Minimal Qdrant collection](examples/qdrant-collection-minimal.yaml)
+- [Qdrant collection with replication](examples/qdrant-collection-replication.yaml)
+- [Complete Qdrant collection](examples/qdrant-collection-complete.yaml)
+
 ## Why not Helm chart
 
 The official [Qdrant Helm chart](https://github.com/qdrant/qdrant-helm) doesn't allow to manage collections, and its functionality is restricted to configure cluster resources only.
+
+## Getting help
+
+If you encounter any issues while using Qdrant-operator, you can get help using [Github issues](https://github.com/ganochenkodg/qdrant-operator/issues).
 
 ## Disclaimer of Warranty
 

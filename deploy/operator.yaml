@@ -75,10 +75,10 @@ spec:
       labels: *labels
     spec:
       serviceAccountName: qdrant-operator-sa
-      terminationGracePeriodSeconds: 5
+      terminationGracePeriodSeconds: 10
       containers:
       - name: operator
-        image: docker.io/dganochenko/qdrant-operator:0.2.0
+        image: docker.io/dganochenko/qdrant-operator:0.2.1
         imagePullPolicy: Always
         # debug
         # command: ["/bin/sh"]
