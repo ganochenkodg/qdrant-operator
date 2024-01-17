@@ -1,10 +1,12 @@
 import { log } from './index.js';
 
+// prepare connection params
 const getConnectionParameters = async (apiObj, k8sCustomApi, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
   const clusterName = apiObj.spec.cluster;
   var parameters = {};
+  // read the cluster custom object
   const resCluster = await k8sCustomApi.getNamespacedCustomObjectStatus(
     'qdrant.operator',
     'v1alpha1',
@@ -13,6 +15,7 @@ const getConnectionParameters = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     clusterName
   );
   const resCurrent = resCluster.body;
+  // set http or https connection scheme
   if (typeof resCurrent.spec.tls == 'undefined') {
     parameters.url = 'http://';
   } else {
@@ -20,7 +23,7 @@ const getConnectionParameters = async (apiObj, k8sCustomApi, k8sCoreApi) => {
   }
   parameters.url += `${clusterName}.${namespace}:6333/collections/${name}`;
   parameters.headers = { 'Content-Type': 'application/json' };
-
+  // set apikey header if required
   if (resCurrent.spec.apikey !== 'false') {
     const resSecret = await k8sCoreApi.readNamespacedSecret(
       `${clusterName}-apikey`,
@@ -29,7 +32,6 @@ const getConnectionParameters = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     const resApikey = atob(resSecret.body.data['api-key']);
     parameters.headers['api-key'] = resApikey;
   }
-
   return parameters;
 };
 
@@ -40,6 +42,7 @@ export const createCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     k8sCustomApi,
     k8sCoreApi
   );
+  // prepare payload
   var body = {
     vectors: {
       size: apiObj.spec.vectorSize,
@@ -49,6 +52,7 @@ export const createCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     shard_number: apiObj.spec.shardNumber,
     replication_factor: apiObj.spec.replicationFactor
   };
+  // set additional configs if defined
   if (typeof apiObj.spec.config !== 'undefined') {
     body = { ...body, ...apiObj.spec.config };
   }
@@ -56,6 +60,7 @@ export const createCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     log(
       `Trying to create a Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
     );
+    // PUT request to Qdrant API
     const resp = await fetch(parameters.url, {
       method: 'PUT',
       headers: parameters.headers,
@@ -75,6 +80,7 @@ export const updateCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     k8sCustomApi,
     k8sCoreApi
   );
+  // prepare payload
   var body = {
     vectors: {
       '': {
@@ -86,6 +92,7 @@ export const updateCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     shard_number: apiObj.spec.shardNumber,
     replication_factor: apiObj.spec.replicationFactor
   };
+  // set additional configs
   if (typeof apiObj.spec.config !== 'undefined') {
     body = { ...body, ...apiObj.spec.config };
   }
@@ -93,6 +100,7 @@ export const updateCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     log(
       `Trying to update a Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
     );
+    // PATCH request to Qdrant API
     const resp = await fetch(parameters.url, {
       method: 'PATCH',
       headers: parameters.headers,
@@ -116,6 +124,7 @@ export const deleteCollection = async (apiObj, k8sCustomApi, k8sCoreApi) => {
     log(
       `Trying to delete a Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
     );
+    // DELETE request to qdrant API
     const resp = await fetch(parameters.url, {
       method: 'DELETE',
       headers: parameters.headers

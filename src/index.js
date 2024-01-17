@@ -25,7 +25,7 @@ const lock = new K8SLock({
   waitUntilLock: true,
   createLeaseIfNotExist: true,
   leaseDurationInSeconds: 15,
-  refreshLockInterval: 3000,
+  refreshLockInterval: 500,
   lockTryInterval: 3000
 });
 
@@ -41,6 +41,7 @@ var collectionWatch = '';
 var clusterWatchStart = true;
 var collectionWatchStart = true;
 var lockId = '';
+var lockInfo = '';
 // load KubeConfig
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -54,6 +55,11 @@ const watch = new k8s.Watch(kc);
 
 // react on QdrantClusters events
 const onEventCluster = async (phase, apiObj) => {
+  // leader status was lost
+  if (!lockInfo.isLocking) {
+    log('Leader status was lost, restarting...');
+    process.exit(1);
+  }
   // ignore MODIFIED on status changes
   if (settingStatus.has(apiObj.metadata.name)) {
     return;
@@ -80,6 +86,11 @@ const onEventCluster = async (phase, apiObj) => {
 
 // react on QdrantCollections events
 const onEventCollection = async (phase, apiObj) => {
+  // leader status was lost
+  if (!lockInfo.isLocking) {
+    log('Leader status was lost, restarting...');
+    process.exit(1);
+  }
   // ignore duplicated event on watch reconnections
   if (lastCollectionResourceVersion == apiObj.metadata.resourceVersion) {
     return;
@@ -278,7 +289,7 @@ const main = async () => {
   log(
     `Status of "${process.env.POD_NAME}": FOLLOWER. Trying to get leader status...`
   );
-  const lockInfo = await lock.startLocking();
+  lockInfo = await lock.startLocking();
   lockId = lockInfo.lockId;
   log(`Status of "${process.env.POD_NAME}": LEADER.`);
   // start watching events only after taking ownership of the lease
