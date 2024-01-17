@@ -13,10 +13,12 @@ import {
 import { generateCert } from './certificate.js';
 import { Str } from '@supercharge/strings';
 
+// create a secret with certs
 export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
   try {
+    // trying to read the secret
     const res = await k8sCoreApi.readNamespacedSecret(
       `${name}-server-cert`,
       `${namespace}`
@@ -24,12 +26,15 @@ export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
     log(
       `Found generated CA and server certificate in the Secret ${name}-server-cert.`
     );
+    // it exists already, return
     return;
   } catch (err) {
     log(`CA and certificates are not available. Creating...`);
   }
   try {
+    // generate certs
     const cert = await generateCert(apiObj);
+    // create new secret
     const newSecretCertClusterTemplate = clusterSecretCertTemplate(
       apiObj,
       cert
@@ -46,30 +51,33 @@ export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create statefulset
 export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-
+  // if tls enabled but secretref is blank
   if (
     apiObj.spec.tls.enabled &&
     typeof apiObj.spec.tls.secretName == 'undefined'
   ) {
+    // create a secret with certs and use it
     await applySecretCertCluster(apiObj, k8sCoreApi);
     apiObj.spec.tls.secretName = name + '-server-cert';
   }
 
   var newClusterTemplate = clusterTemplate(apiObj);
   try {
+    // trying to read statefulset
     const res = await k8sAppsApi.readNamespacedStatefulSet(
       `${name}`,
       `${namespace}`
     );
     const cluster = res.body;
-
+    // write warning in case of replicas number decreasing
     if (apiObj.spec.replicas < cluster.spec.replicas) {
       log(`Warning: downscaling the cluster may result in data loss!`);
     }
-
+    // update statefulset
     log(`StatefulSet "${name}" already exists! Trying to update...`);
     k8sAppsApi.replaceNamespacedStatefulSet(
       `${name}`,
@@ -82,6 +90,7 @@ export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
     log(`StatefulSet "${name}" is not available. Creating...`);
   }
   try {
+    // create statefulset if can't read
     k8sAppsApi.createNamespacedStatefulSet(`${namespace}`, newClusterTemplate);
     log(`StatefulSet "${name}" was successfully created!`);
   } catch (err) {
@@ -89,12 +98,14 @@ export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
   }
 };
 
+// create authentication config
 export const applyAuthSecretCluster = async (
   apiObj,
   k8sCoreApi,
   apikey,
   readApikey
 ) => {
+  // apikey is disabled, return
   if (apikey == 'false') {
     return;
   }
@@ -108,12 +119,14 @@ export const applyAuthSecretCluster = async (
   );
 
   try {
+    // read config if exists
     const res = await k8sCoreApi.readNamespacedSecret(
       `${name}-auth-config`,
       `${namespace}`
     );
     const secret = res.body;
     log(`Secret "${name}-auth-config" already exists!`);
+    // and replace it
     k8sCoreApi.replaceNamespacedSecret(
       `${name}-auth-config`,
       `${namespace}`,
@@ -125,6 +138,7 @@ export const applyAuthSecretCluster = async (
     log(`Secret "${name}-auth-config" is not available. Creating...`);
   }
   try {
+    // create new secret with auth config
     k8sCoreApi.createNamespacedSecret(
       `${namespace}`,
       newAuthSecretClusterTemplate
@@ -135,6 +149,7 @@ export const applyAuthSecretCluster = async (
   }
 };
 
+// create a secret with apikey
 export const applySecretCluster = async (apiObj, k8sCoreApi) => {
   if (apiObj.spec.apikey == 'false') {
     return 'false';
@@ -142,31 +157,37 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
 
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
+  // if apikey = 'true' - generate a new random key
   const apikey =
     apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.apikey;
   const newSecretClusterTemplate = clusterSecretTemplate(apiObj, apikey);
 
   try {
+    // read existing apikey secret
     const res = await k8sCoreApi.readNamespacedSecret(
       `${name}-apikey`,
       `${namespace}`
     );
     const secret = res.body;
     log(`Secret "${name}-apikey" already exists!`);
+    // if true or equal to the existing one return that key
     if (['true', atob(secret.data['api-key'])].includes(apiObj.spec.apikey)) {
       return atob(secret.data['api-key']);
     }
+    // if not - update the secret
     k8sCoreApi.replaceNamespacedSecret(
       `${name}-apikey`,
       `${namespace}`,
       newSecretClusterTemplate
     );
     log(`Secret "${name}-apikey" was successfully updated!`);
+    // return the key
     return apikey;
   } catch (err) {
     log(`Secret "${name}-apikey" is not available. Creating...`);
   }
   try {
+    // create new secret and return the key
     k8sCoreApi.createNamespacedSecret(`${namespace}`, newSecretClusterTemplate);
     log(`Secret "${name}-apikey" was successfully created!`);
     return apikey;
@@ -175,6 +196,7 @@ export const applySecretCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create a secret with read-only apikey
 export const applyReadSecretCluster = async (apiObj, k8sCoreApi) => {
   if (apiObj.spec.readApikey == 'false') {
     return 'false';
@@ -182,6 +204,7 @@ export const applyReadSecretCluster = async (apiObj, k8sCoreApi) => {
 
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
+  // the same as for read-write apikey
   const readApikey =
     apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.readApikey;
   const newReadSecretClusterTemplate = clusterReadSecretTemplate(
@@ -223,6 +246,7 @@ export const applyReadSecretCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create configmap with custom cluster config
 export const applyConfigmapCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
@@ -255,6 +279,7 @@ export const applyConfigmapCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create a headless service for peer-to-peer communication and targeting specific nodes
 export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
@@ -288,6 +313,7 @@ export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create a common clusterip service
 export const applyServiceCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
@@ -320,7 +346,9 @@ export const applyServiceCluster = async (apiObj, k8sCoreApi) => {
   }
 };
 
+// create PDB
 export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
+  // return if it's a single-node cluster
   if (apiObj.spec.replicas == 1) {
     return;
   }

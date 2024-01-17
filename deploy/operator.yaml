@@ -78,7 +78,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: operator
-        image: docker.io/dganochenko/qdrant-operator:0.2.1
+        image: docker.io/dganochenko/qdrant-operator:0.2.2
         imagePullPolicy: Always
         # debug
         # command: ["/bin/sh"]
