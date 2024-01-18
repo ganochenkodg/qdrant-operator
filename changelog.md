@@ -1,5 +1,11 @@
 # Changelog
 
+## qdrant-operator-0.2.3 (2024-01-18)
+
+- Fixed Qdrant cluster scaling 1 => N replicas
+- Added background checker for lease ownership
+- Bugfixes in the setStatus function
+
 ## qdrant-operator-0.2.2 (2024-01-17)
 
 Small bugfixes.

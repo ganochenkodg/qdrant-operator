@@ -9,7 +9,7 @@ Kubernetes operator for the [Qdrant](https://github.com/qdrant/qdrant) Vector Da
 
 The operator provides the following functionality:
 
-- Creation of single-node and multi-node Qdrant clusters (distributed mode is automatically enabled when using multiple replicas).
+- Creation of single-node and multi-node Qdrant clusters, cluster scaling.
 - Authentication support in the cluster using API keys with read-write and read-only permissions. Auto-generated and user-provided keys are supported.
 - TLS Encryption support for connections, both for client and peer-to-peer communication. Auto-generated and user-provided certificates are supported.
 - Support for setting custom Qdrant parameters.
