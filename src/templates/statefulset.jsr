@@ -37,10 +37,8 @@ spec:
             - name: QDRANT__CLUSTER__P2P__ENABLE_TLS
               value: "true"
           {{/if}}
-          {{if spec.replicas > 1}}
             - name: QDRANT__CLUSTER__ENABLED
               value: "true"
-          {{/if}}
           command: ["/bin/bash", "-c"]
           args: ["./config/initialize.sh"]
           ports:

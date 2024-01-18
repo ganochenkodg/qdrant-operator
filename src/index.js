@@ -24,9 +24,9 @@ const lock = new K8SLock({
   lockLeaserId: process.env.POD_NAME,
   waitUntilLock: true,
   createLeaseIfNotExist: true,
-  leaseDurationInSeconds: 15,
+  leaseDurationInSeconds: 10,
   refreshLockInterval: 500,
-  lockTryInterval: 3000
+  lockTryInterval: 5000
 });
 
 // set debug mode, false by default
@@ -40,8 +40,6 @@ var clusterWatch = '';
 var collectionWatch = '';
 var clusterWatchStart = true;
 var collectionWatchStart = true;
-var lockId = '';
-var lockInfo = '';
 // load KubeConfig
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -51,15 +49,11 @@ const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sCustomApi = kc.makeApiClient(k8s.CustomObjectsApi);
 const k8sPolicyApi = kc.makeApiClient(k8s.PolicyV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
+const k8sCoordinationApi = kc.makeApiClient(k8s.CoordinationV1Api);
 const watch = new k8s.Watch(kc);
 
 // react on QdrantClusters events
 const onEventCluster = async (phase, apiObj) => {
-  // leader status was lost
-  if (!lockInfo.isLocking) {
-    log('Leader status was lost, restarting...');
-    process.exit(1);
-  }
   // ignore MODIFIED on status changes
   if (settingStatus.has(apiObj.metadata.name)) {
     return;
@@ -86,11 +80,6 @@ const onEventCluster = async (phase, apiObj) => {
 
 // react on QdrantCollections events
 const onEventCollection = async (phase, apiObj) => {
-  // leader status was lost
-  if (!lockInfo.isLocking) {
-    log('Leader status was lost, restarting...');
-    process.exit(1);
-  }
   // ignore duplicated event on watch reconnections
   if (lastCollectionResourceVersion == apiObj.metadata.resourceVersion) {
     return;
@@ -197,7 +186,7 @@ const setStatus = async (apiObj, k8sCustomApi, status) => {
     log(err);
   }
   // job is done, remove this resource from the map
-  settingStatus.delete(name);
+  setTimeout(() => settingStatus.delete(name), 300);
 };
 
 // update the version of last caught cluster
@@ -213,6 +202,24 @@ const updateResourceVersion = async (apiObj, k8sCustomApi) => {
   );
   const resCurrent = res.body;
   lastClusterResourceVersion = resCurrent.metadata.resourceVersion;
+};
+
+// check the current leader
+const isLeader = async () => {
+  const namespace = process.env.POD_NAMESPACE;
+  try {
+    const res = await k8sCoordinationApi.readNamespacedLease(
+      'qdrant-operator',
+      namespace
+    );
+    // leader status was lost
+    if (res.body.spec.holderIdentity !== process.env.POD_NAME) {
+      log('Leader status was lost, restarting...');
+      process.exit(1);
+    }
+  } catch (err) {
+    log(err);
+  }
 };
 
 // check the cluster readiness
@@ -289,9 +296,10 @@ const main = async () => {
   log(
     `Status of "${process.env.POD_NAME}": FOLLOWER. Trying to get leader status...`
   );
-  lockInfo = await lock.startLocking();
-  lockId = lockInfo.lockId;
+  const lockInfo = await lock.startLocking();
   log(`Status of "${process.env.POD_NAME}": LEADER.`);
+  // start checking lease ownership in background
+  setInterval(() => isLeader(), 10000);
   // start watching events only after taking ownership of the lease
   await watchResource();
 };
@@ -311,7 +319,7 @@ if (debugMode == 'true') {
 
 // got SIGTERM - stop locking and exit
 process.on('SIGTERM', async () => {
-  await lock.stopLocking(lockId);
+  await lock.stopLocking();
   log('Stopping gracefully...');
   process.exit(0);
 });
