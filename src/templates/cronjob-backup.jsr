@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{:metadata.name}}-backup
+  namespace: {{:metadata.namespace}}
+  ownerReferences:
+  - apiVersion: {{:apiVersion}}
+    kind: {{:kind}}
+    name: {{:metadata.name}}
+    uid: {{:metadata.uid}}
+spec:
+  schedule: "{{:spec.snapshots.backupSchedule}}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: {{:jobImage}}
+            command: ["/bin/sh", "-c", "tools/backup.sh"]
+            envFrom:
+            - secretRef:
+                name: {{:spec.snapshots.s3CredentialsSecretName}}
+            env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{if apikeyEnabled}}
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{:spec.cluster}}-apikey
+                  key: api-key
+            {{/if}}
+            - name: CLUSTER_NAME
+              value: {{:spec.cluster}}
+            - name: COLLECTION_NAME
+              value: {{:metadata.name}}
+            - name: CONNECTION_METHOD
+              value: {{:connectionMethod}}
+            - name: BUCKET_NAME
+              value: {{:spec.snapshots.bucketName}}
+            - name: ENDPOINT_URL
+              value: {{:spec.snapshots.s3EndpointURL}}
+            - name: REPLICAS
+              value: "{{:replicas}}"
+          restartPolicy: Never

@@ -1,7 +1,7 @@
-FROM node:18-alpine3.16
+FROM node:18-alpine3.19
 
 # RUN apk add nano
-RUN apk add openssl bash
+RUN apk add openssl bash curl minio-client jq
 
 RUN mkdir /app && chown -R node:node /app
 WORKDIR /app

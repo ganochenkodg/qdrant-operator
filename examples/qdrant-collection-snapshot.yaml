@@ -1,0 +1,15 @@
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCollection
+metadata:
+  name: my-collection
+spec:
+  cluster: my-cluster
+  vectorSize: 10
+  snapshots:
+    s3EndpointURL: https://storage.googleapis.com/
+    # s3EndpointURL: https://s3.amazonaws.com
+    s3CredentialsSecretName: bucket-credentials
+    bucketName: unique-bucket-for-shapshots
+    backupNow: true
+    # backupSchedule: "* * * * *"
+    # restoreSnapshotName: my-cluster/my-collection/2024-01-21-23-38
