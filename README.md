@@ -156,6 +156,7 @@ Guides:
 - [Cluster architecture](docs/architecture.md)
 - [QdrantClusters API reference](docs/qdrantclusters-api.md)
 - [QdrantCollections API reference](docs/qdrantcollections-api.md)
+- [Backup and Restore](docs/backup-restore.md)
 
 YAML examples:
 
@@ -165,6 +166,7 @@ YAML examples:
 - [Complete Qdrant cluster](examples/qdrant-cluster-complete.yaml)
 - [Minimal Qdrant collection](examples/qdrant-collection-minimal.yaml)
 - [Qdrant collection with replication](examples/qdrant-collection-replication.yaml)
+- [Qdrant collection with snapshots](examples/qdrant-collection-snapshot.yaml)
 - [Complete Qdrant collection](examples/qdrant-collection-complete.yaml)
 
 ## Getting help

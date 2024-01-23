@@ -21,3 +21,12 @@ spec:
         type: int8
         quantile: 0.5
         always_ram: true
+  snapshots:
+    s3EndpointURL: https://storage.googleapis.com/
+    # s3EndpointURL: https://s3.amazonaws.com
+    s3CredentialsSecretName: bucket-credentials
+    bucketName: unique-bucket-for-shapshots
+    # backupNow: true
+    backupSchedule: "0 0 * * *"
+    # restoreSnapshotName: my-cluster/my-collection/2024-01-21-23-38
+
