@@ -1,5 +1,9 @@
 # Changelog
 
+## qdrant-operator-0.3.0 (2024-01-23)
+
+Added new `.snapshots` feature to manage collection backups.
+
 ## qdrant-operator-0.2.3 (2024-01-18)
 
 - Fixed Qdrant cluster scaling 1 => N replicas

@@ -16,6 +16,7 @@ The operator provides the following functionality:
 - Support for setting various scheduling options for the cluster (tolerations, affinities, topology spread).
 - Management of Qdrant collections, including configuration of replication, sharding, indexing, quantization, etc.
 - The operator works in cluster mode with leader elections, ensuring high availability.
+- The operator allows to create instant and scheduled snapshots and store them in any S3-compatible storage.
 
 ## Getting started
 

@@ -71,7 +71,7 @@ metadata:
     app: qdrant-operator
     component: operator
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels: *labels
   template:
@@ -82,7 +82,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: operator
-        image: docker.io/dganochenko/qdrant-operator:0.3.0
+        image: dganochenko/qdrant-operator:0.3.0
         imagePullPolicy: Always
         # debug
         # command: ["/bin/sh"]

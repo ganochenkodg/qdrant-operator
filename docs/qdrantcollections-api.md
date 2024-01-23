@@ -21,7 +21,7 @@ spec:
     s3CredentialsSecretName: bucket-credentials
     bucketName: unique-bucket-for-shapshots
     backupNow: true
-    # backupSchedule: "0 0 \* \* \*"
+    # backupSchedule: "0 0 * * *"
     # restoreSnapshotName: my-cluster/my-collection/2024-01-21-23-38
 ```
 
