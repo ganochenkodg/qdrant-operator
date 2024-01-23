@@ -6,7 +6,7 @@ Instant (`spec.snapshots.backupNow`) and scheduled (`spec.snapshots.backupSchedu
 
 Before you begin, it is necessary to create an S3 bucket and generate a pair of access/secret keys for accessing it.
 
-Also, it is necessary to specify the correct endpoint for the S3 service (`spec.snapshots.s3EndpointURL`), for example, `https://storage.googleapis.com/` for GCP or `https://s3.amazonaws.com` for AWS. 
+Also, it is necessary to specify the correct endpoint for the S3 service (`spec.snapshots.s3EndpointURL`), for example, `https://storage.googleapis.com/` for GCP or `https://s3.amazonaws.com/` for AWS. 
 The access/secret key pair should be stored in a Kubernetes secret (refer it in `spec.snapshots.s3CredentialsSecretName`).
 
 ### Google Cloud Storage
