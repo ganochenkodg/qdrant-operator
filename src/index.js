@@ -14,7 +14,8 @@ import {
 import {
   createCollection,
   updateCollection,
-  deleteCollection
+  deleteCollection,
+  applyJobs
 } from './collection-ops.js';
 
 // use Kubernetes Leases for leader election
@@ -49,6 +50,7 @@ const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sCustomApi = kc.makeApiClient(k8s.CustomObjectsApi);
 const k8sPolicyApi = kc.makeApiClient(k8s.PolicyV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
+const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
 const k8sCoordinationApi = kc.makeApiClient(k8s.CoordinationV1Api);
 const watch = new k8s.Watch(kc);
 
@@ -90,9 +92,11 @@ const onEventCollection = async (phase, apiObj) => {
   // wait for collection creation
   if (phase == 'ADDED') {
     await createCollection(apiObj, k8sCustomApi, k8sCoreApi);
+    await applyJobs(apiObj, k8sCustomApi, k8sBatchApi);
     // wait for collection update
   } else if (phase == 'MODIFIED') {
     await updateCollection(apiObj, k8sCustomApi, k8sCoreApi);
+    await applyJobs(apiObj, k8sCustomApi, k8sBatchApi);
     // wait for collection delete
   } else if (phase == 'DELETED') {
     await deleteCollection(apiObj, k8sCustomApi, k8sCoreApi);

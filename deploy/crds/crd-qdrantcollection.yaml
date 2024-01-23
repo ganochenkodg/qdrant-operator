@@ -61,4 +61,25 @@ spec:
                 description: "Custom Qdrant collection configuration"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              snapshots:
+                type: object
+                required: ["s3EndpointURL", "s3CredentialsSecretName", "bucketName"]
+                properties:
+                  backupNow:
+                    type: boolean
+                    default: false
+                  backupSchedule:
+                    type: string
+                    default: ""
+                  restoreSnapshotName:
+                    type: string
+                    default: ""
+                  s3EndpointURL:
+                    type: string
+                  s3CredentialsSecretName:
+                    type: string
+                  bucketName:
+                    type: string
+
+
 

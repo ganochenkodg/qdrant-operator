@@ -16,6 +16,7 @@ The operator provides the following functionality:
 - Support for setting various scheduling options for the cluster (tolerations, affinities, topology spread).
 - Management of Qdrant collections, including configuration of replication, sharding, indexing, quantization, etc.
 - The operator works in cluster mode with leader elections, ensuring high availability.
+- The operator allows to create instant and scheduled snapshots and store them in any S3-compatible storage.
 
 ## Getting started
 
@@ -155,6 +156,7 @@ Guides:
 - [Cluster architecture](docs/architecture.md)
 - [QdrantClusters API reference](docs/qdrantclusters-api.md)
 - [QdrantCollections API reference](docs/qdrantcollections-api.md)
+- [Backup and Restore](docs/backup-restore.md)
 
 YAML examples:
 
@@ -164,6 +166,7 @@ YAML examples:
 - [Complete Qdrant cluster](examples/qdrant-cluster-complete.yaml)
 - [Minimal Qdrant collection](examples/qdrant-collection-minimal.yaml)
 - [Qdrant collection with replication](examples/qdrant-collection-replication.yaml)
+- [Qdrant collection with snapshots](examples/qdrant-collection-snapshot.yaml)
 - [Complete Qdrant collection](examples/qdrant-collection-complete.yaml)
 
 ## Getting help

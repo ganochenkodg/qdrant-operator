@@ -102,3 +102,21 @@ export const clusterConfigmapTemplate = (apiObj) => {
       : '';
   return jsontemplate;
 };
+
+// backup job template
+export const backupJobTemplate = (apiObj) => {
+  var template = jsrender.templates('./templates/job-backup.jsr');
+  return yaml.load(template(apiObj));
+};
+
+// backup cronjob template
+export const backupCronjobTemplate = (apiObj) => {
+  var template = jsrender.templates('./templates/cronjob-backup.jsr');
+  return yaml.load(template(apiObj));
+};
+
+// restore job template
+export const restoreJobTemplate = (apiObj) => {
+  var template = jsrender.templates('./templates/job-restore.jsr');
+  return yaml.load(template(apiObj));
+};

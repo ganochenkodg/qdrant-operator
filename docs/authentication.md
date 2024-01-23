@@ -96,7 +96,6 @@ curl -L -X PUT "http://my-auth-cluster.default:6333/collections/my-auth-collecti
           {"id": 2, "vector": [0.19, 0.81, 0.75, 0.11], "payload": {"city": "London"}}
         ]
     }'
-
 ```
 
 You should see a similar output:
