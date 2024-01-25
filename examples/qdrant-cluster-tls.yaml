@@ -7,4 +7,5 @@ spec:
   image: qdrant/qdrant:v1.7.3
   tls:
     enabled: true
+    # secretName: secretname
 
