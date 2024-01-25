@@ -28,7 +28,7 @@ The operator provides the following functionality:
 - The operator works in cluster mode with leader elections, ensuring high availability.
 - The operator allows to create instant and scheduled snapshots and store them in any S3-compatible storage.
 
-### ⚙️ Installation
+### 🔨 Installation
 
 To run the operator you need Kubernetes version 1.26+.
 
