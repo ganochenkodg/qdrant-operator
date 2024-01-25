@@ -84,7 +84,7 @@ Found 3 pods, using pod/qdrant-operator-6577f85799-ggkgm
 
 ### ⚡ Quickstart
 
-At first let's deploy the first Qdrant cluster by applying the minimal QdrantCluster custom resource:
+Deploy your first Qdrant cluster by applying the minimal QdrantCluster custom resource:
 
 ```bash
 cat <<EOF | kubectl apply -f -
