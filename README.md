@@ -2,15 +2,15 @@
   <img src="resources/logo.png" width="200"/></a>  
 </p>
 
-#### Kubernetes operator for the [Qdrant](https://github.com/qdrant/qdrant) Vector Database.
+<h4 align="center">Kubernetes operator for the <a href="https://github.com/qdrant/qdrant" target="_blank">Qdrant</a> Vector Database.</h4>
 
 <p align="center">
-  <a href="#key-features">Key Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#quickstart">Quickstart</a> •
-  <a href="#security">Security</a> •
-  <a href="#backups">Backups</a> •
-  <a href="#documentation">Documentation</a>
+  <a href="#-key-features">Key Features</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-quickstart">Quickstart</a> •
+  <a href="#-security">Security</a> •
+  <a href="#-backups">Backups</a> •
+  <a href="#-documentation">Documentation</a>
 </p>
 
 ![screenshot](resources/qdrant-operator.gif)
