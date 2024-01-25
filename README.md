@@ -229,7 +229,7 @@ YAML examples:
 
 ### ⭐ Give a Star! 
 
-Support this project by **giving it a star**. Thanks!
+Do you like this project? Support it by **giving a star**!
 
 ## Getting help
 
