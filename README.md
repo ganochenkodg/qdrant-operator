@@ -28,7 +28,7 @@ The operator provides the following functionality:
 - The operator works in cluster mode with leader elections, ensuring high availability.
 - The operator allows to create instant and scheduled snapshots and store them in any S3-compatible storage.
 
-### ⚙️  Installation
+### ⚙️ Installation
 
 To run the operator you need Kubernetes version 1.26+.
 
@@ -82,7 +82,7 @@ Found 3 pods, using pod/qdrant-operator-6577f85799-ggkgm
 1/14/2024, 3:58:41 PM: Watching QdrantCollections API.
 ```
 
-### ⚡️ Quickstart
+### ⚡ Quickstart
 
 At first let's deploy the first Qdrant cluster by applying the minimal QdrantCluster custom resource:
 
