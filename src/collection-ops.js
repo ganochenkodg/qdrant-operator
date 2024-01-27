@@ -1,9 +1,5 @@
 import { log } from './index.js';
-import {
-  backupJobTemplate,
-  backupCronjobTemplate,
-  restoreJobTemplate
-} from './cluster-template.js';
+import { genericTemplate } from './cluster-template.js';
 
 // prepare connection params
 const getConnectionParameters = async (apiObj, k8sCustomApi, k8sCoreApi) => {
@@ -85,10 +81,13 @@ export const applyJobs = async (apiObj, k8sCustomApi, k8sBatchApi) => {
       log(
         `Running a backup job for Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
       );
-      const newBackupJobTemplate = backupJobTemplate({
-        ...apiObj,
-        ...parameters
-      });
+      const newBackupJobTemplate = genericTemplate(
+        {
+          ...apiObj,
+          ...parameters
+        },
+        'job-backup.jsr'
+      );
       k8sBatchApi.createNamespacedJob(`${namespace}`, newBackupJobTemplate);
       log(
         `Backup Job "${newBackupJobTemplate.metadata.name}" was successfully started!`
@@ -102,10 +101,13 @@ export const applyJobs = async (apiObj, k8sCustomApi, k8sBatchApi) => {
       log(
         `Running a restore job for Collection "${name}" in the Cluster "${apiObj.spec.cluster}"...`
       );
-      const newRestoreJobTemplate = restoreJobTemplate({
-        ...apiObj,
-        ...parameters
-      });
+      const newRestoreJobTemplate = genericTemplate(
+        {
+          ...apiObj,
+          ...parameters
+        },
+        'job-restore.jsr'
+      );
       k8sBatchApi.createNamespacedJob(`${namespace}`, newRestoreJobTemplate);
       log(
         `Restore Job "${newRestoreJobTemplate.metadata.name}" was successfully started!`
@@ -115,10 +117,13 @@ export const applyJobs = async (apiObj, k8sCustomApi, k8sBatchApi) => {
     }
   }
   if (apiObj.spec.snapshots.backupSchedule !== '') {
-    const newBackupCronjobTemplate = backupCronjobTemplate({
-      ...apiObj,
-      ...parameters
-    });
+    const newBackupCronjobTemplate = genericTemplate(
+      {
+        ...apiObj,
+        ...parameters
+      },
+      'cronjob-backup.jsr'
+    );
     try {
       // read cronjob if exists
       const res = await k8sBatchApi.readNamespacedCronJob(

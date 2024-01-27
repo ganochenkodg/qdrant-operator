@@ -6,9 +6,7 @@ import {
   clusterReadSecretTemplate,
   clusterSecretTemplate,
   clusterSecretCertTemplate,
-  clusterServiceHeadlessTemplate,
-  clusterServiceTemplate,
-  clusterPdbTemplate
+  genericTemplate
 } from './cluster-template.js';
 import { generateCert } from './certificate.js';
 import { Str } from '@supercharge/strings';
@@ -283,8 +281,10 @@ export const applyConfigmapCluster = async (apiObj, k8sCoreApi) => {
 export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newServiceHeadlessClusterTemplate =
-    clusterServiceHeadlessTemplate(apiObj);
+  const newServiceHeadlessClusterTemplate = genericTemplate(
+    apiObj,
+    'service-headless.jsr'
+  );
 
   try {
     const res = await k8sCoreApi.readNamespacedService(
@@ -317,7 +317,7 @@ export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
 export const applyServiceCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newServiceClusterTemplate = clusterServiceTemplate(apiObj);
+  const newServiceClusterTemplate = genericTemplate(apiObj, 'service.jsr');
 
   try {
     const res = await k8sCoreApi.readNamespacedService(
@@ -355,7 +355,7 @@ export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
 
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newPdbClusterTemplate = clusterPdbTemplate(apiObj);
+  const newPdbClusterTemplate = genericTemplate(apiObj, 'pdb.jsr');
 
   try {
     const res = await k8sPolicyApi.readNamespacedPodDisruptionBudget(
