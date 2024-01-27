@@ -73,24 +73,6 @@ export const clusterSecretCertTemplate = (apiObj, cert) => {
   return jsontemplate;
 };
 
-// headless svc template
-export const clusterServiceHeadlessTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/service-headless.jsr');
-  return yaml.load(template(apiObj));
-};
-
-// clusterip svc template
-export const clusterServiceTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/service.jsr');
-  return yaml.load(template(apiObj));
-};
-
-// pdb template
-export const clusterPdbTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/pdb.jsr');
-  return yaml.load(template(apiObj));
-};
-
 // clustr config template
 export const clusterConfigmapTemplate = (apiObj) => {
   var template = jsrender.templates('./templates/configmap.jsr');
@@ -103,20 +85,8 @@ export const clusterConfigmapTemplate = (apiObj) => {
   return jsontemplate;
 };
 
-// backup job template
-export const backupJobTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/job-backup.jsr');
-  return yaml.load(template(apiObj));
-};
-
-// backup cronjob template
-export const backupCronjobTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/cronjob-backup.jsr');
-  return yaml.load(template(apiObj));
-};
-
-// restore job template
-export const restoreJobTemplate = (apiObj) => {
-  var template = jsrender.templates('./templates/job-restore.jsr');
+// generic template without additional logic
+export const genericTemplate = (apiObj, templatePath) => {
+  var template = jsrender.templates(`./templates/${templatePath}`);
   return yaml.load(template(apiObj));
 };
