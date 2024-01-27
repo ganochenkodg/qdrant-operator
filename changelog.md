@@ -1,5 +1,9 @@
 # Changelog
 
+## qdrant-operator-0.3.1 (2024-01-27)
+
+Merged similar template functions into one generic
+
 ## qdrant-operator-0.3.0 (2024-01-23)
 
 Added new `.snapshots` feature to manage collection backups.
