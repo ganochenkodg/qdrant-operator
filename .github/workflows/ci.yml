@@ -17,5 +17,13 @@ jobs:
           tag: 1h
           path: src/
           build_file: Dockerfile
-          password: blankpassword
-          debug: true
+          password: nopasswordatall
+      - name: Install K3S
+        uses: nolar/setup-k3d-k3s@v1
+        with:
+          version: v1.26
+      - name: Install qdrant-operator
+        run: |
+          kubectl apply -f deploy/crds/
+          sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
+          kubectl rollout status deploy/qdrant-operator -n qdrant-operator
