@@ -1,0 +1,53 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'deploy/**'
+      - 'src/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'deploy/**'
+      - 'src/**'
+jobs:
+  job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
+        with:
+          registry: ttl.sh
+          image: qdrant-operator
+          tag: 1h
+          path: src/
+          build_file: Dockerfile
+          password: nopasswordatall
+      - name: Install K3S
+        uses: nolar/setup-k3d-k3s@v1
+        with:
+          version: v1.26
+      - name: Install qdrant-operator
+        run: |
+          kubectl apply -f deploy/crds/
+          sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
+          kubectl rollout status deploy/qdrant-operator -n qdrant-operator
+          kubectl logs -n qdrant-operator deploy/qdrant-operator
+      - name: Run the minimal Qdrant cluster with a collection
+        run: |
+          kubectl apply -f examples/qdrant-cluster-minimal.yaml
+          sleep 3s && kubectl rollout status statefulset my-cluster
+          kubectl apply -f examples/qdrant-collection-minimal.yaml
+          export PODNAME=$(kubectl get pod -n qdrant-operator -l app=qdrant-operator -o name|head -n 1)
+          export RESULT=$(kubectl exec -n qdrant-operator -t $PODNAME -- curl -s "http://my-cluster.default:6333/collections/my-collection")
+          echo "Qdrant response is:"
+          echo $RESULT
+          if [[ $RESULT =~ "\"status\":\"green\"" ]]; then 
+            echo "Collection \"my-collection\" is available!"
+          else
+            echo "Something went wrong!"
+            exit 1
+          fi
+
