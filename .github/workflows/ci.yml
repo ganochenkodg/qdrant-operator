@@ -27,11 +27,6 @@ jobs:
           kubectl apply -f deploy/crds/
           sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
           kubectl rollout status deploy/qdrant-operator -n qdrant-operator
-      - name: Install qdrant-operator
-        run: |
-          kubectl apply -f deploy/crds/
-          sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
-          kubectl rollout status deploy/qdrant-operator -n qdrant-operator
       - name: Run the minimal Qdrant cluster with a collection
         run: |
           kubectl apply -f examples/qdrant-cluster-minimal.yaml
