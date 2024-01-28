@@ -17,4 +17,5 @@ jobs:
           tag: 1h
           path: src/
           build_file: Dockerfile
+          password: blankpassword
           debug: true
