@@ -27,12 +27,15 @@ jobs:
           kubectl apply -f deploy/crds/
           sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
           kubectl rollout status deploy/qdrant-operator -n qdrant-operator
+          kubectl logs -n qdrant-operator deploy/qdrant-operator
       - name: Run the minimal Qdrant cluster with a collection
         run: |
           kubectl apply -f examples/qdrant-cluster-minimal.yaml
-          sleep 5s && kubectl rollout status statefulset my-cluster-0
+          sleep 5s && kubectl rollout status statefulset my-cluster
           kubectl apply -f examples/qdrant-collection-minimal.yaml
           export PODNAME=$(kubectl get pod -n qdrant-operator -l app=qdrant-operator -o name|head -n 1)
+          echo "Operator logs:"
+          sleep 3s && kubectl logs -n qdrant-operator deploy/qdrant-operator
           export RESULT=$(kubectl exec -n qdrant-operator -it $PODNAME -- curl "http://my-cluster.default:6333/collections/my-collection")
           if [[ $RESULT =~ "\"status\":\"green\"" ]]; then 
             echo "Collection \"my-collection\" is available!"
