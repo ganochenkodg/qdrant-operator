@@ -34,10 +34,8 @@ jobs:
           sleep 3s && kubectl rollout status statefulset my-cluster
           kubectl apply -f examples/qdrant-collection-minimal.yaml
           export PODNAME=$(kubectl get pod -n qdrant-operator -l app=qdrant-operator -o name|head -n 1)
-          sleep 2s && echo "Operator logs:"
-          kubectl logs -n qdrant-operator deploy/qdrant-operator
-          export RESULT=$(kubectl exec -n qdrant-operator -it $PODNAME -- curl "http://my-cluster.default:6333/collections/my-collection")
-          echo "Qdrant response:"
+          export RESULT=$(kubectl exec -n qdrant-operator -t $PODNAME -- curl -s "http://my-cluster.default:6333/collections/my-collection")
+          echo "Qdrant response is:"
           echo $RESULT
           if [[ $RESULT =~ "\"status\":\"green\"" ]]; then 
             echo "Collection \"my-collection\" is available!"
