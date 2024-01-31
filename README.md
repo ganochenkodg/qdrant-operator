@@ -11,6 +11,7 @@
   <a href="#-security">Security</a> •
   <a href="#-backups">Backups</a> •
   <a href="#-documentation">Documentation</a>
+  <a href="#-demo-application">Demo application</a>
 </p>
 
 ![screenshot](resources/qdrant-operator.gif)
@@ -205,6 +206,12 @@ spec:
 
 Ensure to replace placeholders `your-credentials-secret` and `your-bucket-for-snapshots` with your actual secret name and bucket name.
 
+### 🤖 Demo application
+
+![demo](resources/demo2.gif)
+
+Check the [demo-app](demo-app/README.md) folder to see a simple demo application that allows you to upload PDF documents to Qdrant and answer questions about the contents of the file.
+
 ### 📖 Documentation
 
 Guides:
@@ -231,7 +238,7 @@ YAML examples:
 
 Do you like this project? Support it by **giving a star**!
 
-## Getting help
+### ❓ Getting help
 
 If you encounter any issues while using Qdrant-operator, you can get help using [Github issues](https://github.com/ganochenkodg/qdrant-operator/issues).
 
