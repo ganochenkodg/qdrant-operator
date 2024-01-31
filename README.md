@@ -210,7 +210,8 @@ Ensure to replace placeholders `your-credentials-secret` and `your-bucket-for-sn
 
 ![demo](resources/demo2.gif)
 
-Check the [demo-app](demo-app/README.md) folder to see a simple demo application that allows you to upload PDF documents to Qdrant and answer questions about the contents of the file.
+Check the [demo-app](demo-app/README.md) folder to see a simple demo application that allows you to upload PDF documents to Qdrant and answer questions about the contents of the file. 
+The demo application does not rely on paid APIs from well-known services (such as Google Vertex AI or OpenAI). 
 
 ### 📖 Documentation
 
