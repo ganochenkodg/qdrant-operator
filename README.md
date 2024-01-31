@@ -10,7 +10,7 @@
   <a href="#-quickstart">Quickstart</a> •
   <a href="#-security">Security</a> •
   <a href="#-backups">Backups</a> •
-  <a href="#-documentation">Documentation</a>
+  <a href="#-documentation">Documentation</a> •
   <a href="#-demo-application">Demo application</a>
 </p>
 
