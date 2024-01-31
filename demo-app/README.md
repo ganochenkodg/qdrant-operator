@@ -41,7 +41,7 @@ node index.js pdfs/carbon-free-energy.pdf
 
 After preparing the data you will see greeting from the bot and can ask your questions. Press `CTRL-C` to exit the app.
 
-![demo1](resources/demo1.gif)
+![demo1](../resources/demo1.gif)
 
 Run the app, choosing the second document:
 
@@ -49,7 +49,7 @@ Run the app, choosing the second document:
 node index.js pdfs/cost-of-living.pdf
 ```
 
-![demo2](resources/demo2.gif)
+![demo2](../resources/demo2.gif)
 
 Feel free to use the code of this program as a starting point for your projects utilizing Qdrant as a storage solution and flexible search engine.
 
