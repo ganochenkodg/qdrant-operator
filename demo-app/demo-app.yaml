@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-app
+spec:
+  containers:
+    - image: dganochenko/demo-rag-app:1.0
+      imagePullPolicy: Always
+      name: rag
+      command: ["/bin/sh"]
+      args: ["-c", "while true; do echo hello; sleep 10;done"]
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: "1"
+        limits:
+          memory: "2Gi"
+          cpu: "4"
+      env:
+      - name: QDRANT_URL
+        value: http://my-cluster.default:6333
+
+

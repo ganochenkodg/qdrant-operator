@@ -87,6 +87,13 @@ spec:
         # debug
         # command: ["/bin/sh"]
         # args: ["-c", "while true; do echo hello; sleep 10;done"]
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "256Mi"
+            cpu: "1"
         envFrom:
         - configMapRef:
             name: qdrant-operator-config
