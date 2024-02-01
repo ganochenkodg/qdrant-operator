@@ -16,15 +16,6 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-    additionalPrinterColumns:
-    - name: Replicas
-      description: The desired number of Qdrant replicas in the cluster
-      jsonPath: .spec.replicas
-      type: integer
-    - name: Status
-      description: The state of the custom resource
-      jsonPath: .status.qdrantStatus
-      type: string
     schema:
       openAPIV3Schema:
         description: "A Qdrant collection definition"
