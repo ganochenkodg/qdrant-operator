@@ -12,7 +12,10 @@
     "type": "git",
     "url": "git+https://github.com/ganochenkodg/qdrant-operator.git"
   },
-  "keywords": ["k8s", "operator"],
+  "keywords": [
+    "k8s",
+    "operator"
+  ],
   "author": "Dmitrii Ganochenko",
   "license": "MIT",
   "bugs": {
