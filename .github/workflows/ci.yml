@@ -12,7 +12,7 @@ on:
       - 'deploy/**'
       - 'src/**'
 jobs:
-  Lint and Unit Test:
+  lint-and-unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
           cd src
           npm ci
           npm run lint
-  Integration Test:
+  integration-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
