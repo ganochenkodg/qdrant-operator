@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ava",
+    "lint:check": "./node_modules/.bin/prettier --check .",
+    "lint:write": "./node_modules/.bin/prettier --write ."
   },
   "repository": {
     "type": "git",
@@ -27,5 +29,9 @@
     "@supercharge/strings": "^2.0.0",
     "js-yaml": "^4.1.0",
     "jsrender": "^1.0.13"
+  },
+  "devDependencies": {
+    "ava": "^6.1.1",
+    "prettier": "^3.2.4"
   }
 }
