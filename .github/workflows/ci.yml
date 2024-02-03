@@ -24,7 +24,7 @@ jobs:
         run: |
           cd src
           npm ci
-          npm run lint
+        npm run lint:check
   integration-test:
     runs-on: ubuntu-latest
     steps:

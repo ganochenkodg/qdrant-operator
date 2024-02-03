@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "ava",
-    "lint": "./node_modules/.bin/prettier --check ."
+    "lint:check": "./node_modules/.bin/prettier --check .",
+    "lint:write": "./node_modules/.bin/prettier --write ."
   },
   "repository": {
     "type": "git",

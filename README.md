@@ -239,9 +239,14 @@ YAML examples:
 
 Do you like this project? Support it by **giving a star**!
 
-### ❓ Getting help
+### ❓ Help and contribution.
 
-If you encounter any issues while using Qdrant-operator, you can get help using [Github issues](https://github.com/ganochenkodg/qdrant-operator/issues).
+If you encounter any issues while using Qdrant-operator, you can get help using [Github issues](https://github.com/ganochenkodg/qdrant-operator/issues). 
+If you want to help out with a code contribution, check the [Contribution guideline](./CONTRIBUTING.md).
+
+## License
+
+This project is licensed under the [MIT](./LICENSE) license.
 
 ## Disclaimer of Warranty
 
