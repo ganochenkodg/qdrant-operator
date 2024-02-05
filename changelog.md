@@ -1,5 +1,10 @@
 # Changelog
 
+## qdrant-operator-0.3.2 (2024-02-05)
+
+- Added new specs: sidecarContainers, additionalVolumes, additionalVolumeMounts
+- Added unit tests with AVA
+
 ## qdrant-operator-0.3.1 (2024-01-27)
 
 Merged similar template functions into one generic
