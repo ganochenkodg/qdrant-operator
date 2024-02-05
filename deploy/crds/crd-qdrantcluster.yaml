@@ -79,8 +79,47 @@ spec:
                   storageClassName:
                     type: string
                     default: "default"
+              sidecarContainers:
+                type: array
+                nullable: true
+                default: []
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  required: ["name", "image"]
+                  properties:
+                    name:
+                      type: string
+                    image:
+                      type: string
+              additionalVolumes:
+                type: array
+                nullable: true
+                default: []
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  required: ["name"]
+                  properties:
+                    name:
+                      type: string
+              additionalVolumeMounts:
+                type: array
+                nullable: true
+                default: []
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  required: ["name", "mountPath"]
+                  properties:
+                    name:
+                      type: string
+                    mountPath:
+                      type: string
               resources:
                 type: object
+                nullable: true
+                default: {}
                 properties:
                   limits:
                     type: object
@@ -113,6 +152,8 @@ spec:
               # scheduling options
               tolerations:
                 type: array
+                nullable: true
+                default: []
                 items:
                   type: object
                   properties:
@@ -135,6 +176,8 @@ spec:
                       type: integer
               nodeAffinity:
                 type: object
+                nullable: true
+                default: {}
                 properties:
                   preferredDuringSchedulingIgnoredDuringExecution:
                     type: array
@@ -226,6 +269,8 @@ spec:
                                       type: string
               podAntiAffinity:
                 type: object
+                nullable: true
+                default: {}
                 properties:
                   preferredDuringSchedulingIgnoredDuringExecution:
                     type: array
@@ -332,6 +377,8 @@ spec:
                           type: string
               topologySpreadConstraints:
                 type: array
+                nullable: true
+                default: []
                 items:
                   type: object
                   properties:

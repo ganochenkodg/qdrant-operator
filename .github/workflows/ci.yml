@@ -20,16 +20,20 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-      - name: Lint
+      - name: Check code style
         run: |
           cd src
           npm ci
           npm run lint:check
+      - name: Run unit tests
+        run: |
+          cd src
+          npm run test
   integration-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Kaniko build
+      - name: Build docker images
         uses: aevea/action-kaniko@master
         with:
           registry: ttl.sh
@@ -48,7 +52,7 @@ jobs:
           sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
           kubectl rollout status deploy/qdrant-operator -n qdrant-operator
           kubectl logs -n qdrant-operator deploy/qdrant-operator
-      - name: Run the minimal Qdrant cluster with a collection
+      - name: Integration test
         run: |
           kubectl apply -f examples/qdrant-cluster-minimal.yaml
           sleep 3s && kubectl rollout status statefulset my-cluster

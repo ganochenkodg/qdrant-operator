@@ -9,26 +9,28 @@ export const clusterTemplate = (apiObj) => {
   var jsontemplate = yaml.load(
     template({ ...apiObj, ...{ persistence: persistence } })
   );
-  // fill all specific specs if they are defined in the custom resource
+  // assign all specific array/object type specs
   jsontemplate.spec.template.spec.containers[0].resources =
-    typeof apiObj.spec.resources !== 'undefined' ? apiObj.spec.resources : {};
-  // scheduling specs
-  jsontemplate.spec.template.spec.tolerations =
-    typeof apiObj.spec.tolerations !== 'undefined'
-      ? apiObj.spec.tolerations
-      : [];
+    apiObj.spec.resources;
+  jsontemplate.spec.template.spec.containers[0].volumeMounts = [
+    ...jsontemplate.spec.template.spec.containers[0].volumeMounts,
+    ...apiObj.spec.additionalVolumeMounts
+  ];
+  jsontemplate.spec.template.spec.volumes = [
+    ...jsontemplate.spec.template.spec.volumes,
+    ...apiObj.spec.additionalVolumes
+  ];
+  jsontemplate.spec.template.spec.containers = [
+    ...jsontemplate.spec.template.spec.containers,
+    ...apiObj.spec.sidecarContainers
+  ];
+  jsontemplate.spec.template.spec.tolerations = apiObj.spec.tolerations;
   jsontemplate.spec.template.spec.topologySpreadConstraints =
-    typeof apiObj.spec.topologySpreadConstraints !== 'undefined'
-      ? apiObj.spec.topologySpreadConstraints
-      : [];
+    apiObj.spec.topologySpreadConstraints;
   jsontemplate.spec.template.spec.affinity.nodeAffinity =
-    typeof apiObj.spec.nodeAffinity !== 'undefined'
-      ? apiObj.spec.nodeAffinity
-      : {};
+    apiObj.spec.nodeAffinity;
   jsontemplate.spec.template.spec.affinity.podAntiAffinity =
-    typeof apiObj.spec.podAntiAffinity !== 'undefined'
-      ? apiObj.spec.podAntiAffinity
-      : {};
+    apiObj.spec.podAntiAffinity;
   return jsontemplate;
 };
 
