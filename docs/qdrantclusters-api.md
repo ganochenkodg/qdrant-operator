@@ -24,6 +24,17 @@ spec:
     storageClassName: default
   tls:
     enabled: true
+  sidecarContainers: []
+  - name: nginx
+    image: nginx:1.25
+    ports:
+    - containerPort: 80
+  additionalVolumes: []
+  - name: qdrant-newfolder
+    emptyDir: {}
+  additionalVolumeMounts: []
+  - name: qdrant-newfolder
+    mountPath: /qdrant/newfolder
   resources:
     requests:
       cpu: 10m
@@ -60,6 +71,12 @@ spec:
   - **enabled** (boolean, optional): Enable or disable TLS both for client and internode connections within the cluster.
 
   - **secretName** (string, optional): Secret name containing cert.pem, key.pem, and cacert.pem for Server TLS. If not declared, the operator will generate a new CA and certificate.
+
+- sidecarContainers (array, optional): A list of sidecar containers to be run alongside the Qdrant container in a Kubernetes Pod.
+
+- additionalVolumes (array, optional): Additional volumes that can be mounted into the containers in a Pod.
+
+- additionalVolumeMounts (array, optional): Additional volume mounts for the Qdrant container in a Pod.
 
 - **resources** (object, optional): Resource requests and limits for the Qdrant cluster.
 

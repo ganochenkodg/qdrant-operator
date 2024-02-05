@@ -23,6 +23,17 @@ spec:
     # secretName: secretname
     # Optional. This secret should contain the next fields: cert.pem, key.pem and cacert.pem
     # If not declared - the operator will generate new CA and certificate
+  sidecarContainers:
+  - name: nginx
+    image: nginx:1.25
+    ports:
+    - containerPort: 80
+  additionalVolumes:
+  - name: qdrant-newfolder
+    emptyDir: {}
+  additionalVolumeMounts:
+  - name: qdrant-newfolder
+    mountPath: /qdrant/newfolder
   resources:
     requests:
       cpu: 10m

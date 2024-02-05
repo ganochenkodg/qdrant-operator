@@ -60,7 +60,7 @@ data:
   DEBUG_MODE: "true"
   NODE_TLS_REJECT_UNAUTHORIZED: "0"
   NODE_OPTIONS: "--no-warnings"
-  JOB_IMAGE: "dganochenko/qdrant-operator:0.3.1"
+  JOB_IMAGE: "dganochenko/qdrant-operator:0.3.2"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -82,7 +82,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: operator
-        image: dganochenko/qdrant-operator:0.3.1
+        image: dganochenko/qdrant-operator:0.3.2
         imagePullPolicy: Always
         # debug
         # command: ["/bin/sh"]
