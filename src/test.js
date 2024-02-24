@@ -18,7 +18,7 @@ const clusterMinimalPayload = {
     additionalVolumeMounts: [],
     additionalVolumes: [],
     apikey: 'false',
-    image: 'qdrant/qdrant:v1.7.3',
+    image: 'qdrant/qdrant:v1.7.4',
     nodeAffinity: {},
     podAntiAffinity: {},
     readApikey: 'false',
@@ -64,7 +64,7 @@ const clusterCompletePayload = {
         }
       }
     },
-    image: 'qdrant/qdrant:v1.7.3',
+    image: 'qdrant/qdrant:v1.7.4',
     nodeAffinity: {
       preferredDuringSchedulingIgnoredDuringExecution: [
         {
@@ -183,7 +183,7 @@ const expectedMinimalTemplate = {
         containers: [
           {
             name: 'qdrant',
-            image: 'qdrant/qdrant:v1.7.3',
+            image: 'qdrant/qdrant:v1.7.4',
             imagePullPolicy: 'IfNotPresent',
             env: [
               {
@@ -272,7 +272,7 @@ const expectedCompleteTemplate = {
         containers: [
           {
             name: 'qdrant',
-            image: 'qdrant/qdrant:v1.7.3',
+            image: 'qdrant/qdrant:v1.7.4',
             imagePullPolicy: 'IfNotPresent',
             env: [
               {

@@ -4,7 +4,7 @@ metadata:
   name: my-cluster
 spec:
   replicas: 3
-  image: qdrant/qdrant:v1.7.3
+  image: qdrant/qdrant:v1.7.4
   apikey: 'true'
   # apikey: 'yourkey'
   # Optional. If not declared - the operator will generate new random key

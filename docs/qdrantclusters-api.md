@@ -12,7 +12,7 @@ metadata:
   name: your-cluster-name
 spec:
   replicas: 3
-  image: qdrant/qdrant:v1.7.3
+  image: qdrant/qdrant:v1.7.4
   apikey: 'true'
   readApikey: 'true'
   config:

@@ -82,7 +82,7 @@ metadata:
   name: my-cluster
 spec:
   replicas: 3
-  image: qdrant/qdrant:v1.7.3
+  image: qdrant/qdrant:v1.7.4
   apikey: 'true'
   tls:
     enabled: true

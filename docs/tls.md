@@ -12,7 +12,7 @@ metadata:
   name: my-auth-cluster
 spec:
   replicas: 1
-  image: qdrant/qdrant:v1.7.3
+  image: qdrant/qdrant:v1.7.4
   tls:
     enabled: true
 EOF
@@ -28,7 +28,7 @@ metadata:
   name: my-notls-cluster
 spec:
   replicas: 1
-  image: qdrant/qdrant:v1.7.3
+  image: qdrant/qdrant:v1.7.4
 EOF
 ```
 
