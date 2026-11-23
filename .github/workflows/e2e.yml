@@ -28,7 +28,7 @@ jobs:
       (
         github.event.issue.pull_request &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
-        startsWith(trim(github.event.comment.body), '/run_e2e')
+        startsWith(github.event.comment.body, '/run_e2e')
       )
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +81,7 @@ jobs:
       - name: Install CRDs and operator
         run: |
           kubectl apply -f deploy/crds/
-          sed -e 's|dganochenko/qdrant-operator:.*|qdrant-operator:e2e|g' \
+          sed -e 's|dganochenko/qdrant-operator:[^"]*|qdrant-operator:e2e|g' \
               -e 's|imagePullPolicy: Always|imagePullPolicy: Never|g' \
               deploy/operator.yaml | kubectl apply -f -
           kubectl rollout status deploy/qdrant-operator -n qdrant-operator --timeout=180s
