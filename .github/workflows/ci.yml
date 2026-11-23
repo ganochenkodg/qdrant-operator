@@ -1,70 +1,54 @@
+name: CI
+
 on:
   push:
     branches:
       - main
     paths:
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
       - 'deploy/**'
       - 'src/**'
   pull_request:
-    paths:
-      - '.github/workflows/ci.yml'
-      - 'deploy/**'
-      - 'src/**'
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint-and-unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: '24.x'
+          cache: 'npm'
+          cache-dependency-path: src/package-lock.json
+      - name: Install dependencies
+        working-directory: src
+        run: npm ci
       - name: Check code style
-        run: |
-          cd src
-          npm ci
-          npm run lint:check
+        working-directory: src
+        run: npm run lint:check
       - name: Run unit tests
-        run: |
-          cd src
-          npm run test
-  integration-test:
+        working-directory: src
+        run: npm run test
+      - name: Audit production dependencies
+        working-directory: src
+        run: npm audit --omit=dev || true
+
+  clear-stale-e2e-label:
+    if: github.event_name == 'pull_request' && github.event.action == 'synchronize'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build docker images
-        uses: aevea/action-kaniko@master
-        with:
-          registry: ttl.sh
-          image: qdrant-operator
-          tag: 1h
-          path: src/
-          build_file: Dockerfile
-          password: nopasswordatall
-      - name: Install K3S
-        uses: nolar/setup-k3d-k3s@v1
-        with:
-          version: v1.26
-      - name: Install qdrant-operator
+      - name: Remove stale ready-to-merge label on new commits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          kubectl apply -f deploy/crds/
-          sed 's|image: .*$|image: ttl.sh/qdrant-operator:1h|' deploy/operator.yaml | kubectl apply -f -
-          kubectl rollout status deploy/qdrant-operator -n qdrant-operator
-          kubectl logs -n qdrant-operator deploy/qdrant-operator
-      - name: Integration test
-        run: |
-          kubectl apply -f examples/qdrant-cluster-minimal.yaml
-          sleep 3s && kubectl rollout status statefulset my-cluster
-          kubectl apply -f examples/qdrant-collection-minimal.yaml
-          export PODNAME=$(kubectl get pod -n qdrant-operator -l app=qdrant-operator -o name|head -n 1)
-          export RESULT=$(kubectl exec -n qdrant-operator -t $PODNAME -- curl -s "http://my-cluster.default:6333/collections/my-collection")
-          echo "Qdrant response is:"
-          echo $RESULT
-          if [[ $RESULT =~ "\"status\":\"green\"" ]]; then 
-            echo "Collection \"my-collection\" is available!"
-          else
-            echo "Something went wrong!"
-            exit 1
-          fi
-
+          gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --remove-label "ready-to-merge" || true

@@ -1,0 +1,239 @@
+name: E2E Tests
+
+on:
+  issue_comment:
+    types:
+      - created
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to test and label ready-to-merge (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+
+concurrency:
+  group: e2e-${{ github.event.issue.number || inputs.pr_number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+        startsWith(trim(github.event.comment.body), '/run_e2e')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR target and acknowledge comment
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.issue.number || inputs.pr_number }}"
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          if [ -n "$PR_NUMBER" ]; then
+            HEAD_SHA=$(gh pr view "$PR_NUMBER" --repo "${{ github.repository }}" --json headRefOid --jq '.headRefOid')
+            echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          else
+            echo "head_sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+              -f content=eyes > /dev/null || true
+          fi
+
+      - name: Mark commit status pending
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${HEAD_SHA}" \
+            -f state="pending" \
+            -f context="e2e-tests" \
+            -f description="E2E tests are running" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
+
+      - name: Checkout target commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+
+      - name: Build operator image
+        run: docker build -t qdrant-operator:e2e src/
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: qdrant-e2e
+
+      - name: Load operator image into kind
+        run: kind load docker-image qdrant-operator:e2e --name qdrant-e2e
+
+      - name: Install CRDs and operator
+        run: |
+          kubectl apply -f deploy/crds/
+          sed -e 's|dganochenko/qdrant-operator:.*|qdrant-operator:e2e|g' \
+              -e 's|imagePullPolicy: Always|imagePullPolicy: Never|g' \
+              deploy/operator.yaml | kubectl apply -f -
+          kubectl rollout status deploy/qdrant-operator -n qdrant-operator --timeout=180s
+
+      - name: Run E2E tests against Qdrant v1.20.2
+        run: |
+          set -euo pipefail
+
+          cat <<'EOF' | kubectl apply -f -
+          apiVersion: qdrant.operator/v1alpha1
+          kind: QdrantCluster
+          metadata:
+            name: e2e-cluster
+            namespace: default
+          spec:
+            replicas: 1
+            image: qdrant/qdrant:v1.20.2
+            apikey: 'true'
+            readApikey: 'true'
+            jwtRbac: true
+            tls:
+              enabled: true
+            probes:
+              readiness:
+                enabled: true
+              liveness:
+                enabled: true
+              startup:
+                enabled: true
+                failureThreshold: 30
+            podSecurityContext:
+              fsGroup: 3000
+              fsGroupChangePolicy: Always
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 2000
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            config:
+              storage:
+                performance:
+                  io_uring: auto
+          EOF
+
+          sleep 5
+          kubectl rollout status statefulset/e2e-cluster -n default --timeout=180s
+
+          # Wait for operator to mark QdrantCluster status as Running
+          for i in $(seq 1 12); do
+            STATUS=$(kubectl get qdrantcluster e2e-cluster -n default -o jsonpath='{.status.qdrantStatus}')
+            [ "$STATUS" = "Running" ] && break
+            sleep 5
+          done
+          test "$STATUS" = "Running"
+
+          cat <<'EOF' | kubectl apply -f -
+          apiVersion: qdrant.operator/v1alpha1
+          kind: QdrantCollection
+          metadata:
+            name: e2e-col
+            namespace: default
+          spec:
+            cluster: e2e-cluster
+            vectorSize: 32
+            distance: Dot
+            datatype: float16
+            onDisk: true
+            sparseVectors:
+              bm25:
+                modifier: idf
+            payloadIndexes:
+              - fieldName: category
+                fieldSchema: keyword
+              - fieldName: description
+                fieldSchema:
+                  type: text
+                  tokenizer: word
+                  lowercase: true
+          EOF
+
+          # Wait for QdrantCollection status Ready
+          for i in $(seq 1 12); do
+            COL_STATUS=$(kubectl get qdrantcollection e2e-col -n default -o jsonpath='{.status.collectionStatus}')
+            [ "$COL_STATUS" = "Ready" ] && break
+            sleep 3
+          done
+          test "$COL_STATUS" = "Ready"
+
+          APIKEY=$(kubectl get secret e2e-cluster-apikey -n default -o jsonpath='{.data.api-key}' | base64 -d)
+          OP_POD=$(kubectl get pod -n qdrant-operator -l app=qdrant-operator -o jsonpath='{.items[0].metadata.name}')
+          kubectl get secret e2e-cluster-server-cert -n default -o jsonpath='{.data.cacert\.pem}' | base64 -d | \
+            kubectl exec -i -n qdrant-operator "$OP_POD" -- sh -c 'cat > /tmp/ca.pem'
+
+          RESULT=$(kubectl exec -n qdrant-operator "$OP_POD" -- \
+            curl -sS --cacert /tmp/ca.pem -H "api-key: ${APIKEY}" \
+            "https://e2e-cluster.default.svc.cluster.local:6333/collections/e2e-col")
+          echo "Create response: $RESULT"
+          echo "$RESULT" | jq -e '.result.status == "green" and .result.config.params.vectors.distance == "Dot" and .result.config.params.vectors.datatype == "float16" and (.result.payload_schema | has("category") and has("description"))'
+
+          # Verify PATCH
+          kubectl patch qdrantcollection e2e-col -n default --type=merge -p '{"spec":{"onDisk":false}}'
+          sleep 4
+          PATCHED=$(kubectl exec -n qdrant-operator "$OP_POD" -- \
+            curl -sS --cacert /tmp/ca.pem -H "api-key: ${APIKEY}" \
+            "https://e2e-cluster.default.svc.cluster.local:6333/collections/e2e-col")
+          echo "$PATCHED" | jq -e '.result.config.params.vectors.on_disk == false'
+
+          # Verify DELETE
+          kubectl delete qdrantcollection e2e-col -n default
+          sleep 4
+          DELETED=$(kubectl exec -n qdrant-operator "$OP_POD" -- \
+            curl -sS --cacert /tmp/ca.pem -H "api-key: ${APIKEY}" \
+            "https://e2e-cluster.default.svc.cluster.local:6333/collections/e2e-col")
+          echo "$DELETED" | jq -e '.status.error != null'
+
+          kubectl delete qdrantcluster e2e-cluster -n default
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          kubectl get all -A
+          kubectl logs -n qdrant-operator -l app=qdrant-operator --prefix --tail=100 || true
+
+      - name: Apply ready-to-merge label, commit status, and comment on success
+        if: success() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${HEAD_SHA}" \
+            -f state="success" \
+            -f context="e2e-tests" \
+            -f description="E2E tests passed on kind (Qdrant v1.20.2)" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
+          gh label create "ready-to-merge" --repo "${{ github.repository }}" --color "0e8a16" --description "E2E tests passed" --force
+          gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "ready-to-merge"
+          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body "E2E tests passed for \`${HEAD_SHA}\`. Added \`ready-to-merge\` label. ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))"
+
+      - name: Set failed commit status and comment on failure
+        if: failure() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${HEAD_SHA}" \
+            -f state="failure" \
+            -f context="e2e-tests" \
+            -f description="E2E tests failed" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
+          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body "E2E tests failed for \`${HEAD_SHA}\`. ([logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))"
