@@ -28,7 +28,7 @@ jobs:
       (
         github.event.issue.pull_request &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
-        startsWith(trim(github.event.comment.body), '/run_e2e')
+        startsWith(github.event.comment.body, '/run_e2e')
       )
     runs-on: ubuntu-latest
     steps:
