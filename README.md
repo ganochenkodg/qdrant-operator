@@ -21,7 +21,7 @@
 The operator provides the following functionality:
 
 - Creation of single-node and multi-node Qdrant clusters (tested up to Qdrant `v1.20.2`), cluster scaling.
-- Authentication support using API keys (read-write and read-only, auto-generated or user-provided) and **JWT RBAC** (`spec.jwtRbac`).
+- Authentication support using API keys (read-write and read-only, auto-generated or user-provided) and JWT RBAC (`spec.jwtRbac`).
 - TLS Encryption support for client and peer-to-peer connections with per-cluster CA verification (auto-generated or user-provided certificates).
 - Production-ready pod configuration: HTTP/HTTPS probes (`/readyz`, `/livez`, `startupProbe`), `podSecurityContext`/`securityContext`, `nodeSelector`, `env`/`envFrom`, `podAnnotations`/`podLabels`, tolerations, affinities, and topology spread.
 - Support for setting custom Qdrant parameters (`spec.config`, e.g. `io_uring: auto`, quotas, audit logs, or Qdrant's built-in S3 snapshot storage via `spec.config` + `spec.envFrom`).
