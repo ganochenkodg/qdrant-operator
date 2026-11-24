@@ -1,34 +1,45 @@
-import { log } from './index.js';
-import { exec } from 'child_process';
-import * as fs from 'fs';
+import { execFile } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { log } from './logger.js';
 
-// black magic tu turn .exec into Promise
-const execShellCommand = async (cmd) => {
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.warn(error);
-      }
-      resolve(stdout ? stdout : stderr);
-    });
-  });
-};
+const execFileAsync = promisify(execFile);
+const scriptPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  'tools',
+  'cert-generate.sh'
+);
 
 // generate server cert
 export const generateCert = async (apiObj) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  // get k8s cluster domain
   const clusterDomain = process.env.CLUSTER_DOMAIN || 'cluster.local';
-  // wait for certs
-  const certs = await execShellCommand(
-    `./tools/cert-generate.sh --name ${name} --namespace ${namespace} --domain ${clusterDomain}`
-  );
-  log(certs);
-  // return CA, server cert and private key
-  return {
-    'cert.pem': fs.readFileSync(`./cert/${name}/cert.pem`),
-    'key.pem': fs.readFileSync(`./cert/${name}/key.pem`),
-    'cacert.pem': fs.readFileSync(`./cert/${name}/cacert.pem`)
-  };
+  const outDir = mkdtempSync(join(tmpdir(), `qdrant-cert-${name}-`));
+
+  try {
+    const { stdout } = await execFileAsync(scriptPath, [
+      '--name',
+      name,
+      '--namespace',
+      namespace,
+      '--domain',
+      clusterDomain,
+      '--out-dir',
+      outDir
+    ]);
+    if (stdout) {
+      log(stdout);
+    }
+    return {
+      'cert.pem': readFileSync(join(outDir, 'cert.pem'), 'utf8'),
+      'key.pem': readFileSync(join(outDir, 'key.pem'), 'utf8'),
+      'cacert.pem': readFileSync(join(outDir, 'cacert.pem'), 'utf8')
+    };
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
 };

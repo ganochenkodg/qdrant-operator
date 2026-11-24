@@ -1,5 +1,14 @@
 # Changelog
 
+## qdrant-operator-0.4.0 (2026-11-23)
+
+- **Dependencies & Runtime:** Upgraded to Node.js 24 LTS, `@kubernetes/client-node` v2, `js-yaml` v5, `eta` v4.6 (replacing `jsrender`), `ava` v8, `prettier` v3.10; removed `@supercharge/strings` and `@nullplatform/k8s-lease-lock` (replaced with native `LeaseLeaderElection`).
+- **Reliability & Bugfixes:** Switched to `k8s.makeInformer`, per-resource debounce & `metadata.generation` deduplication, `StrategicMergePatch` for StatefulSet/Service updates, strict 404 checks, PDB cleanup on scale-down to 1 replica, CronJob cleanup on cleared schedule, `execFile` + temp dir cleanup for cert generation, removed `NODE_TLS_REJECT_UNAUTHORIZED=0` in favor of per-cluster CA verification (including backup/restore Jobs), fixed `backup.sh`/`restore.sh` error handling & snapshot cleanup, added `/healthz` and `/readyz` probes to operator Deployment.
+- **Qdrant v1.20 Support:**
+  - `QdrantCluster`: HTTP/HTTPS `/readyz` + `/livez` + `startupProbe` (`spec.probes`), `podSecurityContext`, `securityContext`, `jwtRbac`, `nodeSelector`, `serviceAccountName`, `imagePullSecrets`, `env`, `envFrom`, `podAnnotations`, `podLabels`, `persistence.accessModes`.
+  - `QdrantCollection`: `distance`, `datatype`, `vectors` (named & multi-vectors), `sparseVectors`, `payloadIndexes`, `status` subresource (`Ready`/`Error`, `observedGeneration`) and `kubectl` printer columns.
+- **CI/CD:** Split automatic unit CI (`ci.yml`), manual `/run_e2e` kind E2E workflow (`e2e.yml`), and multi-arch release workflow with Trivy scanning (`release.yml`).
+
 ## qdrant-operator-0.3.2 (2024-02-05)
 
 - Added new specs: sidecarContainers, additionalVolumes, additionalVolumeMounts

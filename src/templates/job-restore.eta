@@ -1,0 +1,12 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: <%= it.metadata.name %>-restore-<%= it.metadata.generation ?? it.metadata.resourceVersion %>
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+<%~ include('./_snapshot-pod', { ...it, containerName: 'restore', scriptCmd: 'tools/restore.sh', includeSnapshotName: true }) %>

@@ -1,4 +1,7 @@
-import { log } from './index.js';
+import { randomBytes } from 'node:crypto';
+import * as k8s from '@kubernetes/client-node';
+import { log } from './logger.js';
+import { fromBase64, isNotFound, upsertResource } from './k8s-utils.js';
 import {
   clusterTemplate,
   clusterConfigmapTemplate,
@@ -9,371 +12,277 @@ import {
   genericTemplate
 } from './cluster-template.js';
 import { generateCert } from './certificate.js';
-import { Str } from '@supercharge/strings';
 
-// create a secret with certs
+const generateApiKey = () => randomBytes(24).toString('base64url');
+const strategicMergePatchOptions = k8s.setHeaderOptions(
+  'Content-Type',
+  k8s.PatchStrategy.StrategicMergePatch
+);
+
+// Shared helper for read-write and read-only API key secrets
+const applyApiKeySecret = async (
+  apiObj,
+  k8sCoreApi,
+  { specKey, suffix, buildTemplate }
+) => {
+  const specValue = apiObj.spec[specKey];
+  if (specValue === 'false') {
+    return 'false';
+  }
+
+  const name = apiObj.metadata.name;
+  const namespace = apiObj.metadata.namespace;
+  const secretName = `${name}${suffix}`;
+  const key = specValue === 'true' ? generateApiKey() : specValue;
+  const body = buildTemplate(apiObj, key);
+
+  let existingSecret;
+  try {
+    existingSecret = await k8sCoreApi.readNamespacedSecret({
+      name: secretName,
+      namespace
+    });
+  } catch (err) {
+    if (!isNotFound(err)) {
+      throw err;
+    }
+  }
+
+  if (existingSecret) {
+    log(`Secret "${secretName}" already exists.`);
+    const currentKey = fromBase64(existingSecret.data['api-key']);
+    if (['true', currentKey].includes(specValue)) {
+      return currentKey;
+    }
+    await k8sCoreApi.replaceNamespacedSecret({
+      name: secretName,
+      namespace,
+      body
+    });
+    log(`Secret "${secretName}" updated successfully.`);
+    return key;
+  }
+
+  log(`Secret "${secretName}" not found. Creating...`);
+  await k8sCoreApi.createNamespacedSecret({ namespace, body });
+  log(`Secret "${secretName}" created successfully.`);
+  return key;
+};
+
+const applyService = async (
+  apiObj,
+  k8sCoreApi,
+  { serviceName, templateName }
+) => {
+  const namespace = apiObj.metadata.namespace;
+  const body = genericTemplate(apiObj, templateName);
+  await upsertResource({
+    label: `Service "${serviceName}"`,
+    read: () =>
+      k8sCoreApi.readNamespacedService({ name: serviceName, namespace }),
+    update: () =>
+      k8sCoreApi.patchNamespacedService(
+        { name: serviceName, namespace, body },
+        strategicMergePatchOptions
+      ),
+    create: () => k8sCoreApi.createNamespacedService({ namespace, body })
+  });
+};
+
+// create a secret with TLS certificates
 export const applySecretCertCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
+  const secretName = `${name}-server-cert`;
   try {
-    // trying to read the secret
-    const res = await k8sCoreApi.readNamespacedSecret(
-      `${name}-server-cert`,
-      `${namespace}`
-    );
-    log(
-      `Found generated CA and server certificate in the Secret ${name}-server-cert.`
-    );
-    // it exists already, return
+    await k8sCoreApi.readNamespacedSecret({ name: secretName, namespace });
+    log(`Found existing TLS certificates in Secret "${secretName}".`);
     return;
   } catch (err) {
-    log(`CA and certificates are not available. Creating...`);
+    if (!isNotFound(err)) {
+      throw err;
+    }
+    log(`TLS certificates not found. Generating...`);
   }
-  try {
-    // generate certs
-    const cert = await generateCert(apiObj);
-    // create new secret
-    const newSecretCertClusterTemplate = clusterSecretCertTemplate(
-      apiObj,
-      cert
-    );
-    k8sCoreApi.createNamespacedSecret(
-      `${namespace}`,
-      newSecretCertClusterTemplate
-    );
-    log(
-      `CA and certificates were successfully created and stored in the Secret "${name}-server-cert"!`
-    );
-  } catch (err) {
-    log(err);
-  }
+  const cert = await generateCert(apiObj);
+  await k8sCoreApi.createNamespacedSecret({
+    namespace,
+    body: clusterSecretCertTemplate(apiObj, cert)
+  });
+  log(`TLS certificates generated and stored in Secret "${secretName}".`);
 };
 
-// create statefulset
+// create or update statefulset
 export const applyCluster = async (apiObj, k8sAppsApi, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  // if tls enabled but secretref is blank
-  if (
-    apiObj.spec.tls.enabled &&
-    typeof apiObj.spec.tls.secretName == 'undefined'
-  ) {
-    // create a secret with certs and use it
+  let effectiveApiObj = apiObj;
+
+  if (apiObj.spec.tls?.enabled && !apiObj.spec.tls.secretName) {
     await applySecretCertCluster(apiObj, k8sCoreApi);
-    apiObj.spec.tls.secretName = name + '-server-cert';
+    effectiveApiObj = {
+      ...apiObj,
+      spec: {
+        ...apiObj.spec,
+        tls: { ...apiObj.spec.tls, secretName: `${name}-server-cert` }
+      }
+    };
   }
 
-  var newClusterTemplate = clusterTemplate(apiObj);
+  const newClusterTemplate = clusterTemplate(effectiveApiObj);
+  let existingCluster;
   try {
-    // trying to read statefulset
-    const res = await k8sAppsApi.readNamespacedStatefulSet(
-      `${name}`,
-      `${namespace}`
-    );
-    const cluster = res.body;
-    // write warning in case of replicas number decreasing
-    if (apiObj.spec.replicas < cluster.spec.replicas) {
-      log(`Warning: downscaling the cluster may result in data loss!`);
+    existingCluster = await k8sAppsApi.readNamespacedStatefulSet({
+      name,
+      namespace
+    });
+  } catch (err) {
+    if (!isNotFound(err)) {
+      throw err;
     }
-    // update statefulset
-    log(`StatefulSet "${name}" already exists! Trying to update...`);
-    k8sAppsApi.replaceNamespacedStatefulSet(
-      `${name}`,
-      `${namespace}`,
-      newClusterTemplate
-    );
-    log(`StatefulSet "${name}" was successfully updated!`);
+  }
+
+  if (existingCluster) {
+    if (effectiveApiObj.spec.replicas < existingCluster.spec.replicas) {
+      log(`Warning: downscaling the cluster may result in data loss.`);
+    }
+    log(`StatefulSet "${name}" already exists. Updating...`);
+    // Full replace removes deleted sidecars/env/probes/volumes while preserving immutable StatefulSet fields
+    const replaceBody = {
+      ...newClusterTemplate,
+      metadata: {
+        ...newClusterTemplate.metadata,
+        resourceVersion: existingCluster.metadata?.resourceVersion
+      },
+      spec: {
+        ...newClusterTemplate.spec,
+        selector: existingCluster.spec.selector,
+        serviceName: existingCluster.spec.serviceName,
+        ...(existingCluster.spec.podManagementPolicy
+          ? { podManagementPolicy: existingCluster.spec.podManagementPolicy }
+          : {}),
+        ...(existingCluster.spec.volumeClaimTemplates
+          ? { volumeClaimTemplates: existingCluster.spec.volumeClaimTemplates }
+          : {})
+      }
+    };
+    await k8sAppsApi.replaceNamespacedStatefulSet({
+      name,
+      namespace,
+      body: replaceBody
+    });
+    log(`StatefulSet "${name}" updated successfully.`);
     return;
-  } catch (err) {
-    log(`StatefulSet "${name}" is not available. Creating...`);
   }
-  try {
-    // create statefulset if can't read
-    k8sAppsApi.createNamespacedStatefulSet(`${namespace}`, newClusterTemplate);
-    log(`StatefulSet "${name}" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
+
+  log(`StatefulSet "${name}" not found. Creating...`);
+  await k8sAppsApi.createNamespacedStatefulSet({
+    namespace,
+    body: newClusterTemplate
+  });
+  log(`StatefulSet "${name}" created successfully.`);
 };
 
-// create authentication config
+// create or update authentication config secret
 export const applyAuthSecretCluster = async (
   apiObj,
   k8sCoreApi,
   apikey,
   readApikey
 ) => {
-  // apikey is disabled, return
-  if (apikey == 'false') {
+  if (!apikey || apikey === 'false') {
     return;
   }
-
-  const name = apiObj.metadata.name;
+  const secretName = `${apiObj.metadata.name}-auth-config`;
   const namespace = apiObj.metadata.namespace;
-  const newAuthSecretClusterTemplate = clusterAuthSecretTemplate(
-    apiObj,
-    apikey,
-    readApikey
-  );
-
-  try {
-    // read config if exists
-    const res = await k8sCoreApi.readNamespacedSecret(
-      `${name}-auth-config`,
-      `${namespace}`
-    );
-    const secret = res.body;
-    log(`Secret "${name}-auth-config" already exists!`);
-    // and replace it
-    k8sCoreApi.replaceNamespacedSecret(
-      `${name}-auth-config`,
-      `${namespace}`,
-      newAuthSecretClusterTemplate
-    );
-    log(`Secret "${name}-auth-config" was successfully updated!`);
-    return;
-  } catch (err) {
-    log(`Secret "${name}-auth-config" is not available. Creating...`);
-  }
-  try {
-    // create new secret with auth config
-    k8sCoreApi.createNamespacedSecret(
-      `${namespace}`,
-      newAuthSecretClusterTemplate
-    );
-    log(`Secret "${name}-auth-config" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
+  const body = clusterAuthSecretTemplate(apiObj, apikey, readApikey);
+  await upsertResource({
+    label: `Secret "${secretName}"`,
+    read: () =>
+      k8sCoreApi.readNamespacedSecret({ name: secretName, namespace }),
+    update: () =>
+      k8sCoreApi.replaceNamespacedSecret({ name: secretName, namespace, body }),
+    create: () => k8sCoreApi.createNamespacedSecret({ namespace, body })
+  });
 };
 
-// create a secret with apikey
-export const applySecretCluster = async (apiObj, k8sCoreApi) => {
-  if (apiObj.spec.apikey == 'false') {
-    return 'false';
-  }
+// create or update read-write apikey secret
+export const applySecretCluster = (apiObj, k8sCoreApi) =>
+  applyApiKeySecret(apiObj, k8sCoreApi, {
+    specKey: 'apikey',
+    suffix: '-apikey',
+    buildTemplate: clusterSecretTemplate
+  });
 
-  const name = apiObj.metadata.name;
-  const namespace = apiObj.metadata.namespace;
-  // if apikey = 'true' - generate a new random key
-  const apikey =
-    apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.apikey;
-  const newSecretClusterTemplate = clusterSecretTemplate(apiObj, apikey);
+// create or update read-only apikey secret
+export const applyReadSecretCluster = (apiObj, k8sCoreApi) =>
+  applyApiKeySecret(apiObj, k8sCoreApi, {
+    specKey: 'readApikey',
+    suffix: '-read-apikey',
+    buildTemplate: clusterReadSecretTemplate
+  });
 
-  try {
-    // read existing apikey secret
-    const res = await k8sCoreApi.readNamespacedSecret(
-      `${name}-apikey`,
-      `${namespace}`
-    );
-    const secret = res.body;
-    log(`Secret "${name}-apikey" already exists!`);
-    // if true or equal to the existing one return that key
-    if (['true', atob(secret.data['api-key'])].includes(apiObj.spec.apikey)) {
-      return atob(secret.data['api-key']);
-    }
-    // if not - update the secret
-    k8sCoreApi.replaceNamespacedSecret(
-      `${name}-apikey`,
-      `${namespace}`,
-      newSecretClusterTemplate
-    );
-    log(`Secret "${name}-apikey" was successfully updated!`);
-    // return the key
-    return apikey;
-  } catch (err) {
-    log(`Secret "${name}-apikey" is not available. Creating...`);
-  }
-  try {
-    // create new secret and return the key
-    k8sCoreApi.createNamespacedSecret(`${namespace}`, newSecretClusterTemplate);
-    log(`Secret "${name}-apikey" was successfully created!`);
-    return apikey;
-  } catch (err) {
-    log(err);
-  }
-};
-
-// create a secret with read-only apikey
-export const applyReadSecretCluster = async (apiObj, k8sCoreApi) => {
-  if (apiObj.spec.readApikey == 'false') {
-    return 'false';
-  }
-
-  const name = apiObj.metadata.name;
-  const namespace = apiObj.metadata.namespace;
-  // the same as for read-write apikey
-  const readApikey =
-    apiObj.spec.apikey == 'true' ? Str.random(32) : apiObj.spec.readApikey;
-  const newReadSecretClusterTemplate = clusterReadSecretTemplate(
-    apiObj,
-    readApikey
-  );
-
-  try {
-    const res = await k8sCoreApi.readNamespacedSecret(
-      `${name}-read-apikey`,
-      `${namespace}`
-    );
-    const secret = res.body;
-    log(`Secret "${name}-read-apikey" already exists!`);
-    if (
-      ['true', atob(secret.data['api-key'])].includes(apiObj.spec.readApikey)
-    ) {
-      return atob(secret.data['api-key']);
-    }
-    k8sCoreApi.replaceNamespacedSecret(
-      `${name}-read-apikey`,
-      `${namespace}`,
-      newReadSecretClusterTemplate
-    );
-    log(`Secret "${name}-read-apikey" was successfully updated!`);
-    return readApikey;
-  } catch (err) {
-    log(`Secret "${name}-read-apikey" is not available. Creating...`);
-  }
-  try {
-    k8sCoreApi.createNamespacedSecret(
-      `${namespace}`,
-      newReadSecretClusterTemplate
-    );
-    log(`Secret "${name}-read-apikey" was successfully created!`);
-    return readApikey;
-  } catch (err) {
-    log(err);
-  }
-};
-
-// create configmap with custom cluster config
+// create or update configmap with custom cluster config
 export const applyConfigmapCluster = async (apiObj, k8sCoreApi) => {
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newConfigmapClusterTemplate = clusterConfigmapTemplate(apiObj);
-
-  try {
-    const res = await k8sCoreApi.readNamespacedConfigMap(
-      `${name}`,
-      `${namespace}`
-    );
-    log(`ConfigMap "${name}" already exists! Trying to update...`);
-    k8sCoreApi.replaceNamespacedConfigMap(
-      `${name}`,
-      `${namespace}`,
-      newConfigmapClusterTemplate
-    );
-    log(`ConfigMap "${name}" was successfully updated!`);
-    return;
-  } catch (err) {
-    log(`ConfigMap "${name}" is not available. Creating...`);
-  }
-  try {
-    k8sCoreApi.createNamespacedConfigMap(
-      `${namespace}`,
-      newConfigmapClusterTemplate
-    );
-    log(`ConfigMap "${name}" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
+  const body = clusterConfigmapTemplate(apiObj);
+  await upsertResource({
+    label: `ConfigMap "${name}"`,
+    read: () => k8sCoreApi.readNamespacedConfigMap({ name, namespace }),
+    update: () =>
+      k8sCoreApi.replaceNamespacedConfigMap({ name, namespace, body }),
+    create: () => k8sCoreApi.createNamespacedConfigMap({ namespace, body })
+  });
 };
 
-// create a headless service for peer-to-peer communication and targeting specific nodes
-export const applyServiceHeadlessCluster = async (apiObj, k8sCoreApi) => {
-  const name = apiObj.metadata.name;
-  const namespace = apiObj.metadata.namespace;
-  const newServiceHeadlessClusterTemplate = genericTemplate(
-    apiObj,
-    'service-headless.jsr'
-  );
+// create or update headless service for peer-to-peer communication
+export const applyServiceHeadlessCluster = (apiObj, k8sCoreApi) =>
+  applyService(apiObj, k8sCoreApi, {
+    serviceName: `${apiObj.metadata.name}-headless`,
+    templateName: 'service-headless.eta'
+  });
 
-  try {
-    const res = await k8sCoreApi.readNamespacedService(
-      `${name}-headless`,
-      `${namespace}`
-    );
-    log(`Service "${name}-headless" already exists! Trying to update...`);
-    k8sCoreApi.replaceNamespacedService(
-      `${name}-headless`,
-      `${namespace}`,
-      newServiceHeadlessClusterTemplate
-    );
-    log(`Service "${name}-headless" was successfully updated!`);
-    return;
-  } catch (err) {
-    log(`Service "${name}-headless" is not available. Creating...`);
-  }
-  try {
-    k8sCoreApi.createNamespacedService(
-      `${namespace}`,
-      newServiceHeadlessClusterTemplate
-    );
-    log(`Service "${name}-headless" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
-};
+// create or update client service
+export const applyServiceCluster = (apiObj, k8sCoreApi) =>
+  applyService(apiObj, k8sCoreApi, {
+    serviceName: apiObj.metadata.name,
+    templateName: 'service.eta'
+  });
 
-// create a common clusterip service
-export const applyServiceCluster = async (apiObj, k8sCoreApi) => {
-  const name = apiObj.metadata.name;
-  const namespace = apiObj.metadata.namespace;
-  const newServiceClusterTemplate = genericTemplate(apiObj, 'service.jsr');
-
-  try {
-    const res = await k8sCoreApi.readNamespacedService(
-      `${name}`,
-      `${namespace}`
-    );
-    log(`Service "${name}" already exists! Trying to update...`);
-    k8sCoreApi.replaceNamespacedService(
-      `${name}`,
-      `${namespace}`,
-      newServiceClusterTemplate
-    );
-    log(`Service "${name}" was successfully updated!`);
-    return;
-  } catch (err) {
-    log(`Service "${name}" is not available. Creating...`);
-  }
-  try {
-    k8sCoreApi.createNamespacedService(
-      `${namespace}`,
-      newServiceClusterTemplate
-    );
-    log(`Service "${name}" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
-};
-
-// create PDB
+// create or delete PDB depending on replica count
 export const applyPdbCluster = async (apiObj, k8sPolicyApi) => {
-  // return if it's a single-node cluster
-  if (apiObj.spec.replicas == 1) {
-    return;
-  }
-
   const name = apiObj.metadata.name;
   const namespace = apiObj.metadata.namespace;
-  const newPdbClusterTemplate = genericTemplate(apiObj, 'pdb.jsr');
+
+  if (apiObj.spec.replicas <= 1) {
+    try {
+      await k8sPolicyApi.deleteNamespacedPodDisruptionBudget({
+        name,
+        namespace
+      });
+      log(`PDB "${name}" deleted (single-replica cluster).`);
+    } catch (err) {
+      if (!isNotFound(err)) {
+        throw err;
+      }
+    }
+    return;
+  }
 
   try {
-    const res = await k8sPolicyApi.readNamespacedPodDisruptionBudget(
-      `${name}`,
-      `${namespace}`
-    );
-    log(`PDB "${name}" already exists!`);
+    await k8sPolicyApi.readNamespacedPodDisruptionBudget({ name, namespace });
+    log(`PDB "${name}" already exists.`);
     return;
   } catch (err) {
-    log(`PDB "${name}" is not available. Creating...`);
+    if (!isNotFound(err)) {
+      throw err;
+    }
+    log(`PDB "${name}" not found. Creating...`);
   }
-  try {
-    k8sPolicyApi.createNamespacedPodDisruptionBudget(
-      `${namespace}`,
-      newPdbClusterTemplate
-    );
-    log(`PDB "${name}" was successfully created!`);
-  } catch (err) {
-    log(err);
-  }
+  await k8sPolicyApi.createNamespacedPodDisruptionBudget({
+    namespace,
+    body: genericTemplate(apiObj, 'pdb.eta')
+  });
+  log(`PDB "${name}" created successfully.`);
 };

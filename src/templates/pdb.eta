@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: <%= it.metadata.name %>
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
+spec:
+  minAvailable: "50%"
+  selector:
+    matchLabels:
+      clustername: <%= it.metadata.name %>
+      component: qdrant

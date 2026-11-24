@@ -1,0 +1,210 @@
+<%
+  const probes = it.spec.probes || {};
+  const readiness = probes.readiness || {};
+  const liveness = probes.liveness || {};
+  const startup = probes.startup || {};
+  const podLabels = {
+    ...(it.spec.podLabels || {}),
+    clustername: it.metadata.name,
+    component: 'qdrant'
+  };
+%>
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: <%= it.metadata.name %>
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
+  labels:
+    clustername: <%= it.metadata.name %>
+    component: qdrant
+spec:
+  replicas: <%= it.spec.replicas %>
+  selector:
+    matchLabels:
+      clustername: <%= it.metadata.name %>
+      component: qdrant
+  serviceName: <%= it.metadata.name %>-headless
+  template:
+    metadata:
+<% if (it.spec.podAnnotations) { %>
+      annotations:
+<%= it.toYaml(it.spec.podAnnotations, 8) %>
+<% } %>
+      labels:
+<%= it.toYaml(podLabels, 8) %>
+    spec:
+<% if (it.spec.serviceAccountName) { %>
+      serviceAccountName: <%= it.spec.serviceAccountName %>
+<% } %>
+<% if (it.spec.imagePullSecrets?.length) { %>
+      imagePullSecrets:
+<%= it.toYaml(it.spec.imagePullSecrets, 8) %>
+<% } %>
+<% if (it.spec.podSecurityContext) { %>
+      securityContext:
+<%= it.toYaml(it.spec.podSecurityContext, 8) %>
+<% } %>
+<% if (it.spec.nodeSelector) { %>
+      nodeSelector:
+<%= it.toYaml(it.spec.nodeSelector, 8) %>
+<% } %>
+      containers:
+        - name: qdrant
+          image: "<%= it.spec.image %>"
+          imagePullPolicy: IfNotPresent
+<% if (it.spec.securityContext) { %>
+          securityContext:
+<%= it.toYaml(it.spec.securityContext, 12) %>
+<% } %>
+          env:
+            - name: QDRANT_INIT_FILE_PATH
+              value: /qdrant/init/.qdrant-initialized
+<% if (it.spec.tls?.enabled) { %>
+            - name: QDRANT__SERVICE__ENABLE_TLS
+              value: "true"
+            - name: QDRANT__CLUSTER__P2P__ENABLE_TLS
+              value: "true"
+<% } %>
+            - name: QDRANT__CLUSTER__ENABLED
+              value: "true"
+<% if (it.spec.env?.length) { %>
+<%= it.toYaml(it.spec.env, 12) %>
+<% } %>
+<% if (it.spec.envFrom?.length) { %>
+          envFrom:
+<%= it.toYaml(it.spec.envFrom, 12) %>
+<% } %>
+          command: ["/bin/bash", "-c"]
+          args: ["./config/initialize.sh"]
+          ports:
+          - name: http
+            containerPort: 6333
+          - name: grpc
+            containerPort: 6334
+          - name: p2p
+            containerPort: 6335
+<% if (readiness.enabled !== false) { %>
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 6333
+              scheme: <%= it.probeScheme %>
+            initialDelaySeconds: <%= readiness.initialDelaySeconds ?? 5 %>
+            periodSeconds: <%= readiness.periodSeconds ?? 10 %>
+            timeoutSeconds: <%= readiness.timeoutSeconds ?? 2 %>
+            failureThreshold: <%= readiness.failureThreshold ?? 6 %>
+            successThreshold: <%= readiness.successThreshold ?? 1 %>
+<% } %>
+<% if (liveness.enabled) { %>
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 6333
+              scheme: <%= it.probeScheme %>
+            initialDelaySeconds: <%= liveness.initialDelaySeconds ?? 15 %>
+            periodSeconds: <%= liveness.periodSeconds ?? 15 %>
+            timeoutSeconds: <%= liveness.timeoutSeconds ?? 2 %>
+            failureThreshold: <%= liveness.failureThreshold ?? 5 %>
+            successThreshold: <%= liveness.successThreshold ?? 1 %>
+<% } %>
+<% if (startup.enabled) { %>
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: 6333
+              scheme: <%= it.probeScheme %>
+            initialDelaySeconds: <%= startup.initialDelaySeconds ?? 10 %>
+            periodSeconds: <%= startup.periodSeconds ?? 10 %>
+            timeoutSeconds: <%= startup.timeoutSeconds ?? 2 %>
+            failureThreshold: <%= startup.failureThreshold ?? 30 %>
+            successThreshold: <%= startup.successThreshold ?? 1 %>
+<% } %>
+          resources:
+<%= it.toYaml(it.spec.resources || {}, 12) %>
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "3"]
+          volumeMounts:
+          - name: qdrant-storage
+            mountPath: /qdrant/storage
+          - name: qdrant-config
+            mountPath: /qdrant/config/initialize.sh
+            subPath: initialize.sh
+          - name: qdrant-config
+            mountPath: /qdrant/config/production.yaml
+            subPath: production.yaml
+<% if (it.spec.apikey !== 'false') { %>
+          - name: qdrant-secret
+            mountPath: /qdrant/config/local.yaml
+            subPath: local.yaml
+<% } %>
+<% if (it.spec.tls?.enabled) { %>
+          - name: qdrant-cert
+            mountPath: /qdrant/tls
+<% } %>
+          - name: qdrant-snapshots
+            mountPath: /qdrant/snapshots
+          - name: qdrant-init
+            mountPath: /qdrant/init
+<% if (it.spec.additionalVolumeMounts?.length) { %>
+<%= it.toYaml(it.spec.additionalVolumeMounts, 10) %>
+<% } %>
+<% if (it.spec.sidecarContainers?.length) { %>
+<%= it.toYaml(it.spec.sidecarContainers, 8) %>
+<% } %>
+      affinity:
+        nodeAffinity:
+<%= it.toYaml(it.spec.nodeAffinity || {}, 10) %>
+        podAntiAffinity:
+<%= it.toYaml(it.spec.podAntiAffinity || {}, 10) %>
+      tolerations:
+<%= it.toYaml(it.spec.tolerations || [], 8) %>
+      topologySpreadConstraints:
+<%= it.toYaml(it.spec.topologySpreadConstraints || [], 8) %>
+      volumes:
+        - name: qdrant-config
+          configMap:
+            name: <%= it.metadata.name %>
+            defaultMode: 493
+        - name: qdrant-snapshots
+          emptyDir: {}
+        - name: qdrant-init
+          emptyDir: {}
+<% if (!it.persistence) { %>
+        - name: qdrant-storage
+          emptyDir: {}
+<% } %>
+<% if (it.spec.apikey !== 'false') { %>
+        - name: qdrant-secret
+          secret:
+            secretName: <%= it.metadata.name %>-auth-config
+            defaultMode: 256
+<% } %>
+<% if (it.spec.tls?.enabled) { %>
+        - name: qdrant-cert
+          secret:
+            secretName: <%= it.spec.tls.secretName %>
+            defaultMode: 256
+<% } %>
+<% if (it.spec.additionalVolumes?.length) { %>
+<%= it.toYaml(it.spec.additionalVolumes, 8) %>
+<% } %>
+  volumeClaimTemplates:
+<% if (it.persistence) { %>
+    - metadata:
+        name: qdrant-storage
+        labels:
+          clustername: <%= it.metadata.name %>
+          component: qdrant
+      spec:
+<% if (it.spec.persistence.storageClassName) { %>
+        storageClassName: <%= it.spec.persistence.storageClassName %>
+<% } %>
+        accessModes:
+<%= it.toYaml(it.spec.persistence.accessModes || ['ReadWriteOnce'], 10) %>
+        resources:
+          requests:
+            storage: <%= it.spec.persistence.size %>
+<% } %>

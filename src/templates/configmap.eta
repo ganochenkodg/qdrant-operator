@@ -1,0 +1,18 @@
+<% const scheme = it.spec.tls?.enabled ? 'https' : 'http'; %>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <%= it.metadata.name %>
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
+data:
+  initialize.sh: |
+    #!/bin/sh
+    SET_INDEX=${HOSTNAME##*-}
+    echo "Initializing pod $SET_INDEX..."
+    if [ "$SET_INDEX" = "0" ]; then
+      exec ./entrypoint.sh --uri '<%= scheme %>://<%= it.metadata.name %>-0.<%= it.metadata.name %>-headless.<%= it.metadata.namespace %>:6335'
+    else
+      exec ./entrypoint.sh --bootstrap '<%= scheme %>://<%= it.metadata.name %>-0.<%= it.metadata.name %>-headless.<%= it.metadata.namespace %>:6335' --uri '<%= scheme %>://<%= it.metadata.name %>-'"$SET_INDEX"'.<%= it.metadata.name %>-headless.<%= it.metadata.namespace %>:6335'
+    fi
+  production.yaml: ''

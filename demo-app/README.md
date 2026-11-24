@@ -1,13 +1,13 @@
 # Demo RAG application
 
-In this guide, we will set up a simple Qdrant cluster along with a demo application that allows uploading PDF documents to the database and answering questions about their content. 
-The main advantage is that the demo application does not rely on paid APIs from well-known services (such as Google Vertex AI or OpenAI). 
-We will use the following models to work with the data:
+In this guide, we will set up a simple Qdrant cluster along with a demo application that uploads PDF documents to Qdrant and answers questions about their content completely locally on CPU — no GPU or paid cloud APIs required.
 
-- `Xenova/all-MiniLM-L6-v2` for embedding document chunks.
-- `Xenova/distilbert-base-cased-distilled-squad` for answering questions based on the provided context.
+We use the following models via [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js):
 
-Qdrant will store the vectorized data and perform semantic searches for the relevant context using user-generated queries.
+- `Xenova/multilingual-e5-small` (`q8`, 384 dimensions) for embedding document chunks.
+- `HuggingFaceTB/SmolLM2-360M-Instruct` (`q4`) for generating concise answers from retrieved context.
+
+Qdrant stores the vectorized chunks and performs semantic search for the relevant context.
 
 1. Deploy a minimal Qdrant cluster:
 
@@ -15,7 +15,7 @@ Qdrant will store the vectorized data and perform semantic searches for the rele
 kubectl apply -f https://raw.githubusercontent.com/ganochenkodg/qdrant-operator/main/examples/qdrant-cluster-minimal.yaml
 ```
 
-2. Start the pod with the demo app, which requires a minimum of 1 CPU and 2 GB of memory for execution:
+2. Start the pod with the demo app (requires at least 1 CPU and 2–4 GiB of memory):
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/ganochenkodg/qdrant-operator/main/demo-app/demo-app.yaml
@@ -24,128 +24,136 @@ kubectl apply -f https://raw.githubusercontent.com/ganochenkodg/qdrant-operator/
 3. Wait for its readiness and connect:
 
 ```bash
-kubectl wait pods demo-app --for condition=Ready --timeout=300s
+kubectl wait pod/demo-app --for=condition=Ready --timeout=300s
 kubectl exec -it demo-app -- sh
 ```
 
 4. This pod contains two prepared PDF documents in the `pdfs` folder:
 
-- `carbon-free-energy.pdf` with the Google report about renewable sources of energy, 2023 year
-- `cost-of-living.pdf` with the cost of living report for EU countries, 2022 year 
+- `carbon-free-energy.pdf` — Google report about renewable sources of energy (2023)
+- `cost-of-living.pdf` — cost of living report for EU countries (2022)
 
-Run the demo app, passing the first document as an argument
+Run the demo app, passing a document as an argument:
 
 ```bash
 node index.js pdfs/carbon-free-energy.pdf
 ```
 
-After preparing the data you will see greeting from the bot and can ask your questions. Press `CTRL-C` to exit the app.
+After the models are initialized and the chunks are uploaded to Qdrant, you will see a greeting from the bot and can ask questions. Press `Ctrl-C` to exit.
 
-![demo1](../resources/demo1.gif)
+![demo-rag](../resources/demo-rag.gif)
 
-Run the app, choosing the second document:
+You can also try the second document:
 
 ```bash
 node index.js pdfs/cost-of-living.pdf
 ```
 
-![demo2](../resources/demo2.gif)
-
-Feel free to use the code of this program as a starting point for your projects utilizing Qdrant as a storage solution and flexible search engine.
+Feel free to use this application as a starting point for your own RAG projects powered by Qdrant.
 
 ### Code explanation
 
-Import all required modules:
+Import the required modules:
 
 ```js
-import readline from 'readline-sync';
-import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/hf_transformers';
-import { QdrantVectorStore } from '@langchain/community/vectorstores/qdrant';
-import { pipeline } from '@xenova/transformers';
+import { readFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
+import { PDFParse } from 'pdf-parse';
+import { Document } from '@langchain/core/documents';
+import { Embeddings } from '@langchain/core/embeddings';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { QdrantVectorStore } from '@langchain/qdrant';
+import { pipeline } from '@huggingface/transformers';
 ```
 
-Define the function for capitalizing the beginning of sentences:
+Wrap the local Hugging Face feature-extraction pipeline in a LangChain `Embeddings` adapter (using `passage:` / `query:` prefixes as expected by E5 models):
 
 ```js
-const capitalizeFirstLetter = (string) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
+class LocalTransformersEmbeddings extends Embeddings {
+  constructor(extractor) {
+    super({});
+    this.extractor = extractor;
+  }
+
+  async embedDocuments(texts) {
+    const vectors = [];
+    for (const text of texts) {
+      const res = await this.extractor(`passage: ${text}`, {
+        pooling: 'mean',
+        normalize: true
+      });
+      vectors.push(Array.from(res.data));
+    }
+    return vectors;
+  }
+
+  async embedQuery(text) {
+    const res = await this.extractor(`query: ${text}`, {
+      pooling: 'mean',
+      normalize: true
+    });
+    return Array.from(res.data);
+  }
+}
 ```
 
-Read the file name from application arguments, define the PDF loader and text splitter. Recursive splitter will try to preserve text paragraphs.
+Initialize the quantized embedding and text-generation models:
 
 ```js
-const filename = process.argv[2];
-const loader = new PDFLoader(filename, {
-  splitPages: false
+const extractor = await pipeline('feature-extraction', EMBEDDING_MODEL, {
+  dtype: 'q8'
 });
+const embeddings = new LocalTransformersEmbeddings(extractor);
+const generator = await pipeline('text-generation', LLM_MODEL, {
+  dtype: 'q4'
+});
+```
+
+Parse the PDF, split it into overlapping chunks, and upload them to Qdrant:
+
+```js
+const parser = new PDFParse({ data: await readFile(filename) });
+const { text } = await parser.getText();
+await parser.destroy();
+
 const textSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 1500,
-  chunkOverlap: 0
+  chunkSize: 1200,
+  chunkOverlap: 150
 });
-```
+const splitDocs = await textSplitter.splitDocuments([
+  new Document({ pageContent: text, metadata: { source: filename } })
+]);
 
-Configure embedding and QA models:
-
-```js
-console.log('Initializing required models...');
-const embeddings = new HuggingFaceTransformersEmbeddings({
-  modelName: 'Xenova/all-MiniLM-L6-v2'
-});
-const answerer = await pipeline(
-  'question-answering',
-  'Xenova/distilbert-base-cased-distilled-squad'
+const vectorStore = await QdrantVectorStore.fromDocuments(
+  splitDocs,
+  embeddings,
+  {
+    url: process.env.QDRANT_URL,
+    collectionName: COLLECTION_NAME
+  }
 );
 ```
 
-Load the document:
+In the interactive loop, retrieve the top 2 matching chunks from Qdrant and ask `SmolLM2-360M-Instruct` to answer using only that context:
 
 ```js
-console.log(`Demo application started! Loading ${filename}...`);
-const docs = await loader.load();
-```
+const docs = await vectorStore.similaritySearch(query, 2);
+const context = docs.map((d) => d.pageContent).join('\n\n---\n\n');
+const messages = [
+  {
+    role: 'system',
+    content:
+      'Answer the question using only the provided context. Keep your answer short (2-3 sentences if possible). If the context does not contain the answer, say you do not know.'
+  },
+  {
+    role: 'user',
+    content: `Context:\n${context}\n\nQuestion: ${query}`
+  }
+];
 
-Split it into the smaller chunks:
-
-```js
-console.log(`Splitting ${filename} into chunks...`);
-const splitDocs = await textSplitter.splitDocuments(docs);
-```
-
-Vectorize and upload the to Qdrant:
-
-```js
-console.log(`Uploading documents to Qdrant...`);
-const index = await QdrantVectorStore.fromDocuments(splitDocs, embeddings, {
-  url: process.env.QDRANT_URL,
-  collectionName: 'qa-docs'
+const result = await generator(messages, {
+  max_new_tokens: 120,
+  do_sample: false
 });
-```
-
-Write the welcome phrase and read user input in infinity loop:
-
-```js
-console.log('\x1b[36mBot:\x1b[0m Hello! How can I help you?');
-while (true) {
-  let query = readline.question('\x1b[33mUser:\x1b[0m ');
-```
-
-Define the connection to the collection and find the most relevant part of the document:
-
-```js
-  const client = await QdrantVectorStore.fromExistingCollection(embeddings, {
-    url: process.env.QDRANT_URL,
-    collectionName: 'qa-docs'
-  });
-  let response = await client.similaritySearch(query, 1);
-```
-
-Pass the user query and the context to QA model and return an answer:
-
-```js
-  let output = await answerer(query, response[0].pageContent);
-  console.log(`\x1b[36mBot:\x1b[0m ${capitalizeFirstLetter(output.answer)}`);
-}
 ```

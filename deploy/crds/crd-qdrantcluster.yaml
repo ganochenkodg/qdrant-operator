@@ -45,6 +45,8 @@ spec:
             x-kubernetes-validations:
             - rule: (self.apikey == 'false' && self.readApikey == 'false') || ( self.apikey != 'false')
               message: "spec.readApikey can be used only with spec.apikey enabled"
+            - rule: (!has(self.jwtRbac) || !self.jwtRbac) || (self.apikey != 'false')
+              message: "spec.jwtRbac can be used only with spec.apikey enabled"
             required: ["replicas","image"]
             properties:
               apikey:
@@ -55,6 +57,10 @@ spec:
                 description: "Enable or disable or use pre-defined readonly apikey"
                 type: string
                 default: "false"
+              jwtRbac:
+                description: "Enable JWT RBAC authentication in Qdrant"
+                type: boolean
+                default: false
               image:
                 type: string
               config:
@@ -78,7 +84,117 @@ spec:
                     pattern: '^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$'
                   storageClassName:
                     type: string
-                    default: "default"
+                  accessModes:
+                    type: array
+                    items:
+                      type: string
+                    default: ["ReadWriteOnce"]
+              probes:
+                description: "HTTP/HTTPS probe settings for Qdrant container (/readyz, /livez)"
+                type: object
+                properties:
+                  readiness:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: true
+                      initialDelaySeconds:
+                        type: integer
+                        default: 5
+                      periodSeconds:
+                        type: integer
+                        default: 10
+                      timeoutSeconds:
+                        type: integer
+                        default: 2
+                      failureThreshold:
+                        type: integer
+                        default: 6
+                      successThreshold:
+                        type: integer
+                        default: 1
+                  liveness:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: false
+                      initialDelaySeconds:
+                        type: integer
+                        default: 15
+                      periodSeconds:
+                        type: integer
+                        default: 15
+                      timeoutSeconds:
+                        type: integer
+                        default: 2
+                      failureThreshold:
+                        type: integer
+                        default: 5
+                      successThreshold:
+                        type: integer
+                        default: 1
+                  startup:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: false
+                      initialDelaySeconds:
+                        type: integer
+                        default: 10
+                      periodSeconds:
+                        type: integer
+                        default: 10
+                      timeoutSeconds:
+                        type: integer
+                        default: 2
+                      failureThreshold:
+                        type: integer
+                        default: 30
+                      successThreshold:
+                        type: integer
+                        default: 1
+              podSecurityContext:
+                description: "Pod-level securityContext for Qdrant pods"
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              securityContext:
+                description: "Container-level securityContext for Qdrant container"
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              serviceAccountName:
+                type: string
+              imagePullSecrets:
+                type: array
+                items:
+                  type: object
+                  required: ["name"]
+                  properties:
+                    name:
+                      type: string
+              env:
+                description: "Additional environment variables for Qdrant container"
+                type: array
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+              envFrom:
+                description: "Additional envFrom sources (e.g. Secrets for native S3 snapshots)"
+                type: array
+                items:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+              nodeSelector:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              podAnnotations:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              podLabels:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               sidecarContainers:
                 type: array
                 nullable: true

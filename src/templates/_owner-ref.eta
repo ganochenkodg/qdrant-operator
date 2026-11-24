@@ -1,0 +1,5 @@
+  ownerReferences:
+  - apiVersion: <%= it.apiVersion %>
+    kind: <%= it.kind %>
+    name: <%= it.metadata.name %>
+    uid: <%= it.metadata.uid %>

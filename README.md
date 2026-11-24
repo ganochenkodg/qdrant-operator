@@ -14,20 +14,20 @@
   <a href="#-demo-application">Demo application</a>
 </p>
 
-![screenshot](resources/qdrant-operator.gif)
+![operator demo](resources/demo-operator.gif)
 
 ## 🎯 Key features
 
 The operator provides the following functionality:
 
-- Creation of single-node and multi-node Qdrant clusters, cluster scaling.
-- Authentication support in the cluster using API keys with read-write and read-only permissions. Auto-generated and user-provided keys are supported.
-- TLS Encryption support for connections, both for client and peer-to-peer communication. Auto-generated and user-provided certificates are supported.
-- Support for setting custom Qdrant parameters.
-- Support for setting various scheduling options for the cluster (tolerations, affinities, topology spread).
-- Management of Qdrant collections, including configuration of replication, sharding, indexing, quantization, etc.
-- The operator works in cluster mode with leader elections, ensuring high availability.
-- The operator allows to create instant and scheduled snapshots and store them in any S3-compatible storage.
+- Creation of single-node and multi-node Qdrant clusters (tested up to Qdrant `v1.20.2`), cluster scaling.
+- Authentication support using API keys (read-write and read-only, auto-generated or user-provided) and JWT RBAC (`spec.jwtRbac`).
+- TLS Encryption support for client and peer-to-peer connections with per-cluster CA verification (auto-generated or user-provided certificates).
+- Production-ready pod configuration: HTTP/HTTPS probes (`/readyz`, `/livez`, `startupProbe`), `podSecurityContext`/`securityContext`, `nodeSelector`, `env`/`envFrom`, `podAnnotations`/`podLabels`, tolerations, affinities, and topology spread.
+- Support for setting custom Qdrant parameters (`spec.config`, e.g. `io_uring: auto`, quotas, audit logs, or Qdrant's built-in S3 snapshot storage via `spec.config` + `spec.envFrom`).
+- Management of Qdrant collections with status reporting, supporting custom `distance`/`datatype`, named & multi-vectors, sparse vectors, payload indexes (including full-text BM25 and nested fields), replication, sharding, indexing, and quantization.
+- High-availability operator mode with native Kubernetes Lease leader election and `/healthz` + `/readyz` probes.
+- Instant and scheduled collection snapshots stored in any S3-compatible storage.
 
 ### 🔨 Installation
 
@@ -75,12 +75,13 @@ kubectl logs deploy/qdrant-operator -n qdrant-operator
 ```
 
 ```console
-Found 3 pods, using pod/qdrant-operator-6577f85799-ggkgm
-1/14/2024, 3:58:40 PM: Debug mode ON!
-1/14/2024, 3:58:40 PM: Status of "qdrant-operator-6577f85799-ggkgm": FOLLOWER. Trying to get leader status...
-1/14/2024, 3:58:41 PM: Status of "qdrant-operator-6577f85799-ggkgm": LEADER.
-1/14/2024, 3:58:41 PM: Watching QdrantClusters API.
-1/14/2024, 3:58:41 PM: Watching QdrantCollections API.
+Found 3 pods, using pod/qdrant-operator-d8bccb5d5-qgfqc
+2026-11-24T00:10:54.171Z: Debug mode enabled.
+2026-11-24T00:10:54.185Z: Pod "qdrant-operator-d8bccb5d5-qgfqc" is FOLLOWER. Acquiring leader status...
+2026-11-24T00:10:54.226Z: Health server listening on :8080
+2026-11-24T00:11:04.386Z: Pod "qdrant-operator-d8bccb5d5-qgfqc" is LEADER.
+2026-11-24T00:11:04.388Z: Watching QdrantClusters API.
+2026-11-24T00:11:04.390Z: Watching QdrantCollections API.
 ```
 
 ### ⚡ Quickstart
@@ -95,7 +96,7 @@ metadata:
   name: my-cluster
 spec:
   replicas: 1
-  image: qdrant/qdrant:v1.7.4
+  image: qdrant/qdrant:v1.20.2
 EOF
 ```
 
@@ -106,20 +107,20 @@ qdrantcluster.qdrant.operator/my-cluster created
 Check operator's logs to ensure cluster is running now:
 
 ```console
-1/14/2024, 3:59:24 PM: Received event in phase ADDED.
-1/14/2024, 3:59:25 PM: The cluster "my-cluster" status now is Pending.
-1/14/2024, 3:59:25 PM: ConfigMap "my-cluster" is not available. Creating...
-1/14/2024, 3:59:25 PM: ConfigMap "my-cluster" was successfully created!
-1/14/2024, 3:59:25 PM: Service "my-cluster-headless" is not available. Creating...
-1/14/2024, 3:59:25 PM: Service "my-cluster-headless" was successfully created!
-1/14/2024, 3:59:26 PM: Service "my-cluster" is not available. Creating...
-1/14/2024, 3:59:26 PM: Service "my-cluster" was successfully created!
-1/14/2024, 3:59:26 PM: StatefulSet "my-cluster" is not available. Creating...
-1/14/2024, 3:59:26 PM: StatefulSet "my-cluster" was successfully created!
-1/14/2024, 3:59:31 PM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/14/2024, 3:59:36 PM: Cluster "my-cluster" is not ready: 0/1 are available.
-1/14/2024, 3:59:41 PM: Cluster "my-cluster" is ready!
-1/14/2024, 3:59:41 PM: The cluster "my-cluster" status now is Running.
+2026-11-24T00:11:04.415Z: Received ADDED event for cluster "default/my-cluster".
+2026-11-24T00:11:05.474Z: Cluster "my-cluster" status is now Pending.
+2026-11-24T00:11:05.518Z: ConfigMap "my-cluster" not found. Creating...
+2026-11-24T00:11:05.545Z: ConfigMap "my-cluster" created successfully.
+2026-11-24T00:11:05.567Z: Service "my-cluster-headless" not found. Creating...
+2026-11-24T00:11:05.594Z: Service "my-cluster-headless" created successfully.
+2026-11-24T00:11:05.615Z: Service "my-cluster" not found. Creating...
+2026-11-24T00:11:05.645Z: Service "my-cluster" created successfully.
+2026-11-24T00:11:05.699Z: StatefulSet "my-cluster" not found. Creating...
+2026-11-24T00:11:05.736Z: StatefulSet "my-cluster" created successfully.
+2026-11-24T00:11:10.755Z: Cluster "my-cluster" is not ready: 0/1 replicas available.
+2026-11-24T00:11:15.752Z: Cluster "my-cluster" is not ready: 0/1 replicas available.
+2026-11-24T00:11:20.754Z: Cluster "my-cluster" is ready.
+2026-11-24T00:11:20.790Z: Cluster "my-cluster" status is now Running.
 ```
 
 There are two mandatory parameters - `replicas` and `image`. You can check minimal and complete YAML manifests in the [examples](examples) folder.
@@ -147,9 +148,9 @@ qdrantcollection.qdrant.operator/my-collection created
 Check logs:
 
 ```console
-1/14/2024, 4:01:43 PM: Received event in phase ADDED.
-1/14/2024, 4:01:43 PM: Trying to create a Collection "my-collection" in the Cluster "my-cluster"...
-1/14/2024, 4:01:44 PM: Status: ""ok"", time: "0.311443".
+2026-11-24T00:12:43.102Z: Received ADDED event for collection "default/my-collection".
+2026-11-24T00:12:43.148Z: Creating collection "my-collection" in cluster "my-cluster"...
+2026-11-24T00:12:43.459Z: Qdrant response: status="ok", time=0.311443s.
 ```
 
 There are two mandatory parameters - `cluster` with the cluster reference and `vectorSize`. Minimal and complete manifests are also stored in the [examples](examples) folder.
@@ -206,9 +207,11 @@ spec:
 
 Ensure to replace placeholders `your-credentials-secret` and `your-bucket-for-snapshots` with your actual secret name and bucket name.
 
+Alternatively, Qdrant natively supports storing snapshots directly in S3 (or GCS/Azure) without operator backup jobs — configure `spec.config.storage.snapshots_config` and pass credentials via `spec.envFrom` on `QdrantCluster`. See the [Backup and Restore guide](docs/backup-restore.md#native-qdrant-s3-snapshot-storage) and the [official Qdrant Snapshots documentation](https://qdrant.tech/documentation/concepts/snapshots/).
+
 ### 🤖 Demo application
 
-![demo](resources/demo2.gif)
+![demo](resources/demo-rag.gif)
 
 Check the [demo-app](demo-app/README.md) folder to see a simple demo application that allows you to upload PDF documents to Qdrant and answer questions about the contents of the file. 
 The demo application does not rely on paid APIs from well-known services (such as Google Vertex AI or OpenAI). 

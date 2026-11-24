@@ -1,13 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{:metadata.name}}-headless
-  namespace: {{:metadata.namespace}}
-  ownerReferences:
-  - apiVersion: {{:apiVersion}}
-    kind: {{:kind}}
-    name: {{:metadata.name}}
-    uid: {{:metadata.uid}}
+  name: <%= it.metadata.name %>-headless
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
@@ -22,6 +18,5 @@ spec:
       port: 6335
       targetPort: 6335
   selector:
-    clustername: {{:metadata.name}}
+    clustername: <%= it.metadata.name %>
     component: qdrant
-

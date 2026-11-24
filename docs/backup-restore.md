@@ -1,4 +1,4 @@
-# Qdrand Collections backup/restore guide
+# Qdrant Collections backup/restore guide
 
 In this guide, you will configure the management of Qdrant collection snapshots. 
 Beyond the obvious use case of backup, this can be beneficial for transferring data to a new Qdrant cluster or creating new test collections with a copy of real data. 
@@ -14,7 +14,7 @@ The access/secret key pair should be stored in a Kubernetes secret (refer it in 
 1. Create a bucket with a unique name.
 
 ```bash
-gcloud storage buckets create gs://unique-bucket-for-shapshots
+gcloud storage buckets create gs://unique-bucket-for-snapshots
 ```
 
 2. Create a service account to be used for accessing the bucket.
@@ -34,7 +34,7 @@ export SA_EMAIL=$(gcloud iam service-accounts list \
 4. Grant access to the bucket for the service account.
 
 ```bash
-gcloud storage buckets add-iam-policy-binding gs://unique-bucket-for-shapshots \
+gcloud storage buckets add-iam-policy-binding gs://unique-bucket-for-snapshots \
   --member="serviceAccount:$SA_EMAIL" \
   --role="roles/storage.objectUser"
 ```
@@ -82,7 +82,7 @@ metadata:
   name: my-cluster
 spec:
   replicas: 3
-  image: qdrant/qdrant:v1.7.4
+  image: qdrant/qdrant:v1.20.2
   apikey: 'true'
   tls:
     enabled: true
@@ -179,7 +179,7 @@ spec:
   snapshots:
     s3EndpointURL: https://storage.googleapis.com/
     s3CredentialsSecretName: bucket-credentials
-    bucketName: unique-bucket-for-shapshots
+    bucketName: unique-bucket-for-snapshots
     backupNow: true
 EOF
 ```
@@ -195,15 +195,15 @@ kubectl logs -f job.batch/source-collection-backup-355312
 
 ```console
 Added `S3` successfully.
-Saved my-cluster/source-collection/2024-01-23-17-58/my-cluster-0.snapshot
-Saved my-cluster/source-collection/2024-01-23-17-58/my-cluster-1.snapshot
-Saved my-cluster/source-collection/2024-01-23-17-58/my-cluster-2.snapshot
-`/app/my-cluster/source-collection/2024-01-23-17-58/my-cluster-0.snapshot` -> `S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-0.snapshot`
-`/app/my-cluster/source-collection/2024-01-23-17-58/my-cluster-1.snapshot` -> `S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-1.snapshot`
-`/app/my-cluster/source-collection/2024-01-23-17-58/my-cluster-2.snapshot` -> `S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-2.snapshot`
+Saved my-cluster/source-collection/2026-11-24-00-15/my-cluster-0.snapshot
+Saved my-cluster/source-collection/2026-11-24-00-15/my-cluster-1.snapshot
+Saved my-cluster/source-collection/2026-11-24-00-15/my-cluster-2.snapshot
+`/app/my-cluster/source-collection/2026-11-24-00-15/my-cluster-0.snapshot` -> `S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-0.snapshot`
+`/app/my-cluster/source-collection/2026-11-24-00-15/my-cluster-1.snapshot` -> `S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-1.snapshot`
+`/app/my-cluster/source-collection/2026-11-24-00-15/my-cluster-2.snapshot` -> `S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-2.snapshot`
 Total: 110.67 MiB, Transferred: 110.67 MiB, Speed: 2.67 MiB/s
-Successfully stored "source-collection" backup in the "unique-bucket-for-shapshots" bucket.
-Snapshot name is "my-cluster/source-collection/2024-01-23-17-58".
+Backup of collection "source-collection" uploaded to bucket "unique-bucket-for-snapshots".
+Snapshot path: "my-cluster/source-collection/2026-11-24-00-15".
 ```
 
 9. Create a new `target` collection with the `.snapshots.restoreSnapshotName` option to make a copy of the source collection:
@@ -222,8 +222,8 @@ spec:
   snapshots:
     s3EndpointURL: https://storage.googleapis.com/
     s3CredentialsSecretName: bucket-credentials
-    bucketName: unique-bucket-for-shapshots
-    restoreSnapshotName: my-cluster/source-collection/2024-01-23-17-58
+    bucketName: unique-bucket-for-snapshots
+    restoreSnapshotName: my-cluster/source-collection/2026-11-24-00-15
 EOF
 ```
 
@@ -236,13 +236,13 @@ kubectl logs -f job.batch/target-collection-restore-357566
 
 ```console
 Added `S3` successfully.
-`S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-0.snapshot` -> `my-cluster/source-collection/2024-01-23-17-58/my-cluster-0.snapshot`
-`S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-1.snapshot` -> `my-cluster/source-collection/2024-01-23-17-58/my-cluster-1.snapshot`
-`S3/unique-bucket-for-shapshots/my-cluster/source-collection/2024-01-23-17-58/my-cluster-2.snapshot` -> `my-cluster/source-collection/2024-01-23-17-58/my-cluster-2.snapshot`
+`S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-0.snapshot` -> `my-cluster/source-collection/2026-11-24-00-15/my-cluster-0.snapshot`
+`S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-1.snapshot` -> `my-cluster/source-collection/2026-11-24-00-15/my-cluster-1.snapshot`
+`S3/unique-bucket-for-snapshots/my-cluster/source-collection/2026-11-24-00-15/my-cluster-2.snapshot` -> `my-cluster/source-collection/2026-11-24-00-15/my-cluster-2.snapshot`
 Total: 110.67 MiB, Transferred: 110.67 MiB, Speed: 3.48 MiB/s
-Snapshot my-cluster-0.snapshot restored successfully in time 2.408649.
-Snapshot my-cluster-1.snapshot restored successfully in time 3.569833.
-Snapshot my-cluster-2.snapshot restored successfully in time 1.762345.
+Snapshot my-cluster-0.snapshot restored successfully in 2.408649s.
+Snapshot my-cluster-1.snapshot restored successfully in 3.569833s.
+Snapshot my-cluster-2.snapshot restored successfully in 1.762345s.
 ```
 
 11. Connect to the client pod and run some search query over target collection to ensure data is valid:
@@ -269,3 +269,43 @@ You should a similar answer:
 ```
 
 Press `CTRL-D` to exec from the client pod.
+
+---
+
+### Native Qdrant S3 Snapshot Storage
+
+Starting from recent Qdrant releases, Qdrant itself supports storing snapshots directly in S3-compatible object storage (as well as GCS and Azure) without running operator `Job`/`CronJob` wrappers.
+
+You can enable this on a `QdrantCluster` using `spec.config.storage.snapshots_config` and pass S3 credentials securely from a Kubernetes `Secret` via `spec.envFrom` (so secrets are never stored in a `ConfigMap`):
+
+```yaml
+apiVersion: qdrant.operator/v1alpha1
+kind: QdrantCluster
+metadata:
+  name: my-cluster
+spec:
+  replicas: 3
+  image: qdrant/qdrant:v1.20.2
+  config:
+    storage:
+      snapshots_config:
+        snapshots_storage: s3
+        s3_config:
+          bucket: your-bucket-for-snapshots
+          region: us-east-1
+          # Optional for S3-compatible storage (GCS, MinIO, etc.):
+          # endpoint_url: https://storage.googleapis.com
+          # prefix: qdrant-snapshots
+  envFrom:
+    - secretRef:
+        name: qdrant-s3-snapshot-credentials
+```
+
+Where `qdrant-s3-snapshot-credentials` contains:
+- `QDRANT__STORAGE__SNAPSHOTS_CONFIG__S3_CONFIG__ACCESS_KEY`
+- `QDRANT__STORAGE__SNAPSHOTS_CONFIG__S3_CONFIG__SECRET_KEY`
+
+*(Standard `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` or IAM Workload Identity are also supported by Qdrant.)*
+
+For full details on triggering and recovering snapshots with remote storage, see the [official Qdrant Snapshots documentation](https://qdrant.tech/documentation/concepts/snapshots/).
+

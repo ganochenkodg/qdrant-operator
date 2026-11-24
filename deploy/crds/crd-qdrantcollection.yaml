@@ -8,7 +8,7 @@ spec:
   group: qdrant.operator
   names:
     plural: qdrantcollections
-    singular: qdrantcollections
+    singular: qdrantcollection
     kind: QdrantCollection
     shortNames: []
   scope: Namespaced
@@ -16,6 +16,17 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Cluster
+      description: Target QdrantCluster name
+      jsonPath: .spec.cluster
+      type: string
+    - name: Status
+      description: The state of the Qdrant collection
+      jsonPath: .status.collectionStatus
+      type: string
     schema:
       openAPIV3Schema:
         description: "A Qdrant collection definition"
@@ -31,12 +42,43 @@ spec:
           spec:
             description: "Specs of the Qdrant collection"
             type: object
-            required: ["cluster","vectorSize"]
+            x-kubernetes-validations:
+            - rule: has(self.vectorSize) || has(self.vectors) || has(self.sparseVectors)
+              message: "At least one of spec.vectorSize, spec.vectors, or spec.sparseVectors must be specified"
+            required: ["cluster"]
             properties:
               cluster:
                 type: string
               vectorSize:
                 type: integer
+                minimum: 1
+              distance:
+                description: "Distance metric for single unnamed vector config"
+                type: string
+                enum: ["Cosine", "Euclid", "Dot", "Manhattan"]
+                default: "Cosine"
+              datatype:
+                description: "Vector storage datatype (e.g. float32, float16, uint8, turbo4, turbo8, turbo16)"
+                type: string
+              vectors:
+                description: "Named vectors or multi-vector configuration (overrides vectorSize/distance/onDisk)"
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              sparseVectors:
+                description: "Sparse vectors configuration for hybrid search"
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              payloadIndexes:
+                description: "Payload indexes to ensure on the collection (supports keyword, text/BM25, nested fields)"
+                type: array
+                items:
+                  type: object
+                  required: ["fieldName", "fieldSchema"]
+                  properties:
+                    fieldName:
+                      type: string
+                    fieldSchema:
+                      x-kubernetes-preserve-unknown-fields: true
               shardNumber:
                 type: integer
                 minimum: 1
@@ -49,7 +91,7 @@ spec:
                 type: boolean
                 default: true
               config:
-                description: "Custom Qdrant collection configuration"
+                description: "Custom Qdrant collection configuration (hnsw_config, optimizers_config, quantization_config, strict_mode_config, etc.)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               snapshots:
@@ -71,6 +113,16 @@ spec:
                     type: string
                   bucketName:
                     type: string
-
-
-
+          status:
+            type: object
+            properties:
+              collectionStatus:
+                type: string
+              message:
+                type: string
+              observedGeneration:
+                type: integer
+              lastBackupGeneration:
+                type: integer
+              lastRestoredSnapshot:
+                type: string
