@@ -4,20 +4,18 @@ metadata:
   name: demo-app
 spec:
   containers:
-    - image: dganochenko/demo-rag-app:1.0
+    - image: dganochenko/demo-rag-app:2.0
       imagePullPolicy: Always
       name: rag
       command: ["/bin/sh"]
-      args: ["-c", "while true; do echo hello; sleep 10;done"]
+      args: ["-c", "sleep infinity"]
       resources:
         requests:
           memory: "2Gi"
           cpu: "1"
         limits:
-          memory: "2Gi"
+          memory: "4Gi"
           cpu: "4"
       env:
-      - name: QDRANT_URL
-        value: http://my-cluster.default:6333
-
-
+        - name: QDRANT_URL
+          value: http://my-cluster.default.svc.cluster.local:6333

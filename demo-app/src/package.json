@@ -1,20 +1,19 @@
 {
   "name": "demo-rag-app",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "Local CPU RAG demo application for Qdrant Operator using LangChain and Hugging Face Transformers",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "author": "",
   "license": "MIT",
   "dependencies": {
-    "@langchain/community": "^0.0.21",
-    "@qdrant/js-client-rest": "^1.7.0",
-    "@xenova/transformers": "^2.14.2",
-    "langchain": "^0.1.9",
-    "pdf-parse": "^1.1.1",
-    "readline-sync": "^1.4.10"
+    "@huggingface/transformers": "^4.3.2",
+    "@langchain/core": "^1.1.29",
+    "@langchain/qdrant": "^1.0.0",
+    "@langchain/textsplitters": "^1.0.2",
+    "@qdrant/js-client-rest": "1.18.0",
+    "pdf-parse": "^2.4.5"
   }
 }

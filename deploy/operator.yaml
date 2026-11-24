@@ -15,21 +15,18 @@ kind: ClusterRole
 metadata:
   name: qdrant-operator-role
 rules:
-  - apiGroups: ["apiextensions.k8s.io"]
-    resources: ["customresourcedefinitions"]
-    verbs: ["get","list","watch"]
   - apiGroups: ["qdrant.operator"]
     resources: ["qdrantclusters", "qdrantclusters/status", "qdrantcollections", "qdrantcollections/status"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
   - apiGroups: [""]
-    resources: ["namespaces", "secrets", "configmaps", "services"]
+    resources: ["secrets", "configmaps", "services"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
   - apiGroups: ["apps"]
     resources: ["statefulsets"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
-    verbs: ["get", "list", "create", "watch"]
+    verbs: ["get", "list", "create", "update", "patch", "delete", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
@@ -57,10 +54,9 @@ metadata:
   namespace: qdrant-operator
 data:
   CLUSTER_DOMAIN: "cluster.local"
-  DEBUG_MODE: "true"
-  NODE_TLS_REJECT_UNAUTHORIZED: "0"
+  DEBUG_MODE: "false"
   NODE_OPTIONS: "--no-warnings"
-  JOB_IMAGE: "dganochenko/qdrant-operator:0.3.2"
+  JOB_IMAGE: "dganochenko/qdrant-operator:0.4.0"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -82,8 +78,23 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: operator
-        image: dganochenko/qdrant-operator:0.3.2
+        image: dganochenko/qdrant-operator:0.4.0
         imagePullPolicy: Always
+        ports:
+        - name: health
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          initialDelaySeconds: 3
+          periodSeconds: 10
         # debug
         # command: ["/bin/sh"]
         # args: ["-c", "while true; do echo hello; sleep 10;done"]

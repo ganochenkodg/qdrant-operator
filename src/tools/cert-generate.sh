@@ -1,48 +1,54 @@
 #!/bin/bash
-POSITIONAL_ARGS=()
+set -euo pipefail
+
+NAME=""
+NAMESPACE=""
+DOMAIN=""
+OUT_DIR=""
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     --name)
       NAME="$2"
-      shift
-      shift
+      shift 2
       ;;
     --namespace)
       NAMESPACE="$2"
-      shift
-      shift
+      shift 2
       ;;
     --domain)
       DOMAIN="$2"
-      shift
-      shift
+      shift 2
+      ;;
+    --out-dir)
+      OUT_DIR="$2"
+      shift 2
       ;;
     -*|--*)
-      echo "Unknown option $1"
+      echo "Unknown option $1" >&2
       exit 1
       ;;
     *)
-      POSITIONAL_ARGS+=("$1")
       shift
       ;;
   esac
 done
-set -- "${POSITIONAL_ARGS[@]}"
 
 if [ -z "$NAME" ]; then
-  echo "Please set cluster name using the --name arg"
+  echo "Missing required argument: --name" >&2
   exit 1
 fi
 if [ -z "$NAMESPACE" ]; then
-  echo "Please set namespace using the --namespace arg"
+  echo "Missing required argument: --namespace" >&2
   exit 1
 fi
 if [ -z "$DOMAIN" ]; then
-  echo "Please set K8S cluster domain name using the --domain arg"
+  echo "Missing required argument: --domain" >&2
   exit 1
 fi
 
-mkdir -p cert/${NAME} && cd cert/${NAME}
+OUT_DIR="${OUT_DIR:-cert/${NAME}}"
+mkdir -p "$OUT_DIR" && cd "$OUT_DIR"
 
 # prepare openssl params
 cat <<EOF > csr.conf
@@ -61,25 +67,25 @@ DNS.3 = ${NAME}.${NAMESPACE}
 DNS.4 = ${NAME}-headless.${NAMESPACE}
 DNS.5 = *.${NAME}-headless.${NAMESPACE}
 DNS.6 = *.${NAMESPACE}.svc.${DOMAIN}
+DNS.7 = *.${NAME}-headless.${NAMESPACE}.svc.${DOMAIN}
 EOF
 
 # generate CA key
-openssl genrsa -out cakey.pem 4096 2>/dev/null
-# generate CA cert
+openssl genrsa -out cakey.pem 4096
+# generate CA cert (valid >= server cert)
 openssl req -new -key cakey.pem -x509 \
   -nodes -sha256 \
-  -days 1000 \
+  -days 3650 \
   -out cacert.pem \
-  -subj "/C=US/ST=CA/L=Qdrant/OU=Operator/CN=MyCA" 2>/dev/null
+  -subj "/C=US/ST=CA/L=Qdrant/OU=Operator/CN=MyCA"
 # generate server key
-openssl genrsa -out key.pem 2048 2>/dev/null
+openssl genrsa -out key.pem 2048
 # generate and sign server cert
 openssl req -nodes -sha256 -new -key key.pem \
   -subj "/C=US/ST=CA/L=Qdrant/OU=Operator/CN=${NAME}" \
   -config csr.conf \
   | openssl x509 -days 3650 -sha256 -req -CA cacert.pem -CAkey cakey.pem \
   -extensions v3_req -extfile csr.conf \
-  -CAcreateserial -out cert.pem 2>/dev/null
+  -CAcreateserial -out cert.pem
 
 echo -n "Certificates for \"${NAME}\" are ready!"
-

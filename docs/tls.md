@@ -9,10 +9,10 @@ cat <<EOF | kubectl apply -f -
 apiVersion: qdrant.operator/v1alpha1
 kind: QdrantCluster
 metadata:
-  name: my-auth-cluster
+  name: my-tls-cluster
 spec:
   replicas: 1
-  image: qdrant/qdrant:v1.7.4
+  image: qdrant/qdrant:v1.20.2
   tls:
     enabled: true
 EOF
@@ -23,12 +23,12 @@ EOF
 ```bash
 cat <<EOF | kubectl apply -f -
 apiVersion: qdrant.operator/v1alpha1
-kind: QdrantCluster
+kind: QdrantCollection
 metadata:
-  name: my-notls-cluster
+  name: my-tls-collection
 spec:
-  replicas: 1
-  image: qdrant/qdrant:v1.7.4
+  cluster: my-tls-cluster
+  vectorSize: 4
 EOF
 ```
 
@@ -82,6 +82,6 @@ You will see a similar output:
 
 6. Press `CTRL-D` to exit the pod shell.
 
-You can also use your own certificates by setting the `spec.tls.parameter` to the name of the secret, which contains the files `cert.pem`, `key.pem` and `cacert.pem`. 
+You can also use your own certificates by setting `spec.tls.secretName` to the name of the secret containing `cert.pem`, `key.pem`, and `cacert.pem`. 
 Self-signed certificates can't be used because Qdrant verifies certificates using CA during peer-to-peer communication.
 

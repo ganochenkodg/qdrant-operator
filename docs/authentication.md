@@ -12,9 +12,10 @@ metadata:
   name: my-auth-cluster
 spec:
   replicas: 1
-  image: qdrant/qdrant:v1.7.4
+  image: qdrant/qdrant:v1.20.2
   apikey: 'true'
   readApikey: 'true'
+  # jwtRbac: true
 EOF
 ```
 
@@ -81,7 +82,7 @@ curl -L -X PUT "http://my-auth-cluster.default:6333/collections/my-auth-collecti
 You will get an error:
 
 ```console
-Invalid api-key
+{"status":{"error":"Forbidden: Global manage access is required"},"time":0.000032774}
 ```
 
 5. Upload vectors using read-write apikey:
@@ -101,25 +102,25 @@ curl -L -X PUT "http://my-auth-cluster.default:6333/collections/my-auth-collecti
 You should see a similar output:
 
 ```console
-{"result":{"operation_id":0,"status":"completed"},"status":"ok","time":0.007165}
+{"result":{"operation_id":1,"status":"completed"},"status":"ok","time":0.01871256}
 ```
 
 6. Check if read-only apikey can run search queries:
 
 ```bash
-curl -L -X POST "http://my-auth-cluster.default:6333/collections/my-auth-collection/points/search" \
+curl -L -X POST "http://my-auth-cluster.default:6333/collections/my-auth-collection/points/query" \
     -H "Content-Type: application/json" \
     -H "api-key: $READ_APIKEY" \
     --data-raw '{
-        "vector": [0.2,0.1,0.9,0.7],
-        "top": 1
+        "query": [0.2, 0.1, 0.9, 0.7],
+        "limit": 1
     }'
 ```
 
 Now you will get a good answer, because it's a read-only operation:
 
 ```console
-{"result":[{"id":1,"version":0,"score":0.89463294,"payload":null,"vector":null}],"status":"ok","time":0.001832}
+{"result":{"points":[{"id":1,"version":1,"score":0.89463294}]},"status":"ok","time":0.000490244}
 ```
 
 7. Press `CTRL-D` to exit the pod shell.

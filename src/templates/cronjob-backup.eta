@@ -1,0 +1,19 @@
+<%
+  const podSpec = include('./_snapshot-pod', { ...it, containerName: 'backup', scriptCmd: 'tools/backup.sh', includeSnapshotName: false })
+    .split('\n')
+    .map((line) => (line ? `    ${line}` : line))
+    .join('\n');
+%>
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: <%= it.metadata.name %>-backup
+  namespace: <%= it.metadata.namespace %>
+<%~ include('./_owner-ref', it) %>
+spec:
+  schedule: <%= JSON.stringify(String(it.spec.snapshots.backupSchedule)) %>
+  jobTemplate:
+    spec:
+      template:
+        spec:
+<%~ podSpec %>

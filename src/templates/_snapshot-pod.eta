@@ -1,0 +1,56 @@
+      containers:
+      - name: <%= it.containerName %>
+        image: <%= JSON.stringify(String(it.jobImage)) %>
+        command: ["/bin/sh", "-c", <%= JSON.stringify(it.scriptCmd) %>]
+        envFrom:
+        - secretRef:
+            name: <%= JSON.stringify(String(it.spec.snapshots.s3CredentialsSecretName)) %>
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+<% if (it.apikeyEnabled) { %>
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: <%= JSON.stringify(`${it.spec.cluster}-apikey`) %>
+              key: api-key
+<% } %>
+<% if (it.tlsEnabled) { %>
+        - name: CA_CERT_PATH
+          value: "/etc/qdrant-tls/cacert.pem"
+<% } %>
+        - name: CLUSTER_DOMAIN
+          value: <%= JSON.stringify(String(it.clusterDomain || 'cluster.local')) %>
+        - name: CLUSTER_NAME
+          value: <%= JSON.stringify(String(it.spec.cluster)) %>
+        - name: COLLECTION_NAME
+          value: <%= JSON.stringify(String(it.metadata.name)) %>
+        - name: CONNECTION_METHOD
+          value: <%= JSON.stringify(String(it.connectionMethod)) %>
+        - name: BUCKET_NAME
+          value: <%= JSON.stringify(String(it.spec.snapshots.bucketName)) %>
+        - name: ENDPOINT_URL
+          value: <%= JSON.stringify(String(it.spec.snapshots.s3EndpointURL)) %>
+<% if (it.includeSnapshotName) { %>
+        - name: SNAPSHOT_NAME
+          value: <%= JSON.stringify(String(it.spec.snapshots.restoreSnapshotName)) %>
+<% } %>
+        - name: REPLICAS
+          value: <%= JSON.stringify(String(it.replicas)) %>
+<% if (it.tlsEnabled) { %>
+        volumeMounts:
+        - name: qdrant-ca
+          mountPath: /etc/qdrant-tls/cacert.pem
+          subPath: cacert.pem
+          readOnly: true
+      volumes:
+      - name: qdrant-ca
+        secret:
+          secretName: <%= JSON.stringify(String(it.tlsSecretName)) %>
+          items:
+          - key: cacert.pem
+            path: cacert.pem
+<% } %>
+      restartPolicy: Never

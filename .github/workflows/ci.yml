@@ -22,9 +22,9 @@ jobs:
   lint-and-unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24.x'
           cache: 'npm'
@@ -40,7 +40,7 @@ jobs:
         run: npm run test
       - name: Audit production dependencies
         working-directory: src
-        run: npm audit --omit=dev || true
+        run: npm audit --omit=dev
 
   clear-stale-e2e-label:
     if: github.event_name == 'pull_request' && github.event.action == 'synchronize'

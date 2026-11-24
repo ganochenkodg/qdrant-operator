@@ -5,9 +5,22 @@ metadata:
 spec:
   cluster: my-cluster
   vectorSize: 10
+  distance: Cosine
+  datatype: float32
   onDisk: false
   shardNumber: 6
   replicationFactor: 2
+  sparseVectors:
+    text-sparse:
+      modifier: idf
+  payloadIndexes:
+    - fieldName: category
+      fieldSchema: keyword
+    - fieldName: description
+      fieldSchema:
+        type: text
+        tokenizer: word
+        lowercase: true
   config:
     hnsw_config:
       m: 16

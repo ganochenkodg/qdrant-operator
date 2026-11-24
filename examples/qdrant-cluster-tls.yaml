@@ -4,7 +4,7 @@ metadata:
   name: my-cluster
 spec:
   replicas: 3
-  image: qdrant/qdrant:v1.7.4
+  image: qdrant/qdrant:v1.20.2
   tls:
     enabled: true
     # secretName: secretname
